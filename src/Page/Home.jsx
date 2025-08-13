@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Box, Paper, Button, Typography } from "@mui/material"
 import { useNavigate } from "react-router-dom"
+import { startSessionMonitoring } from "../utils/SessionManager"
 
 export default function Home() {
   const navigate = useNavigate()
@@ -10,9 +11,11 @@ export default function Home() {
 
   useEffect(() => {
     const user = localStorage.getItem("user")
-    const token = localStorage.getItem("token")
-    if (user && token) {
+    const sessionId = localStorage.getItem("sessionId")
+    if (user && sessionId) {
       setIsAuthenticated(true)
+      // Start session monitoring if user is already logged in
+      startSessionMonitoring()
       navigate("/dashboard")
     }
   }, [navigate])

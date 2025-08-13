@@ -1,18 +1,29 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link } from "@mui/material"
 import API from "../api"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
+import { startSessionMonitoring } from "../utils/SessionManager"
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [form, setForm] = useState({
     emailOrUserName: "",
     password: "",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("")
+
+  useEffect(() => {
+    // Check if user was redirected due to session expiration
+    const urlParams = new URLSearchParams(location.search)
+    if (urlParams.get("reason") === "session_expired") {
+      setSessionExpiredMessage("Your session has expired. Please login again.")
+    }
+  }, [location])
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
@@ -20,14 +31,30 @@ export default function Login() {
     e.preventDefault()
     setLoading(true)
     setError("")
+    setSessionExpiredMessage("")
 
     try {
       const { data } = await API.post("/users/login", form)
-      localStorage.setItem("token", data.token)
+
+      // Store sessionId and user data
+      localStorage.setItem("sessionId", data.sessionId)
       localStorage.setItem("user", JSON.stringify(data.user))
-      navigate("/")
+      localStorage.setItem("loginTime", Date.now().toString())
+
+      // Start session monitoring
+      startSessionMonitoring()
+
+      navigate("/dashboard")
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed")
+      if (err.response?.status === 401 && err.response?.data?.code === "SESSION_LIMIT_EXCEEDED") {
+        setError("Maximum session limit reached. Your oldest session has been logged out.")
+        // Still proceed with login as backend handles the session limit
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      } else {
+        setError(err.response?.data?.message || "Login failed")
+      }
     } finally {
       setLoading(false)
     }
@@ -58,7 +85,6 @@ export default function Login() {
           overflow: "auto",
         }}
       >
-        {/* Back Button */}
         <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={() => navigate("/")}>
           ← Back
         </Button>
@@ -66,6 +92,12 @@ export default function Login() {
         <Typography variant="h5" sx={{ mb: 2 }}>
           Login
         </Typography>
+
+        {sessionExpiredMessage && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {sessionExpiredMessage}
+          </Alert>
+        )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
@@ -101,7 +133,6 @@ export default function Login() {
           </Button>
         </form>
 
-        {/* Forgot Password link */}
         <Box sx={{ mt: 2 }}>
           <Link
             component="button"

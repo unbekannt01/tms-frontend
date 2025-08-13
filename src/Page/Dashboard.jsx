@@ -1,9 +1,11 @@
+/* eslint-disable no-unused-vars */
 "use client"
 
 import { useEffect, useState } from "react"
 import { Box, Paper, Typography, Button, CircularProgress } from "@mui/material"
 import API from "../api"
 import { useNavigate } from "react-router-dom"
+import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -12,21 +14,29 @@ export default function Dashboard() {
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
-    const token = localStorage.getItem("token")
+    const sessionId = localStorage.getItem("sessionId")
 
-    if (!userData || !token) {
+    if (!userData || !sessionId) {
       navigate("/login")
       return
     }
 
     try {
-      setUser(JSON.parse(userData))
+      const parsedUser = JSON.parse(userData)
+      setUser(parsedUser)
+
+      // Start session monitoring
+      startSessionMonitoring()
     } catch (error) {
-      console.error("Error parsing user data:", error)
       localStorage.clear()
       navigate("/login")
-    } finally {
-      setLoading(false)
+      return
+    }
+
+    setLoading(false)
+
+    return () => {
+      stopSessionMonitoring()
     }
   }, [navigate])
 
@@ -36,9 +46,14 @@ export default function Dashboard() {
     } catch (err) {
       console.error("Logout failed", err)
     } finally {
+      stopSessionMonitoring()
       localStorage.clear()
       navigate("/")
     }
+  }
+
+  const viewSessions = () => {
+    navigate("/sessions")
   }
 
   if (loading) {
@@ -96,9 +111,15 @@ export default function Dashboard() {
         <Typography variant="body1" sx={{ mb: 3 }}>
           <strong>Email:</strong> {user.email}
         </Typography>
-        <Button variant="outlined" sx={{ mt: 3, py: 1.2 }} onClick={logout}>
-          Logout
-        </Button>
+
+        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
+          <Button variant="outlined" sx={{ py: 1.2 }} onClick={viewSessions}>
+            Manage Sessions
+          </Button>
+          <Button variant="outlined" sx={{ py: 1.2 }} onClick={logout}>
+            Logout
+          </Button>
+        </Box>
       </Paper>
     </Box>
   )
