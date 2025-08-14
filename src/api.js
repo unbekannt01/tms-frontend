@@ -7,25 +7,44 @@ const API = axios.create({
   },
 })
 
-// Attach sessionId if exists
+// Attach authentication headers
 API.interceptors.request.use((req) => {
+  const accessToken = localStorage.getItem("accessToken")
   const sessionId = localStorage.getItem("sessionId")
+
+  // Primary: Use JWT token
+  if (accessToken) {
+    req.headers.Authorization = `Bearer ${accessToken}`
+  }
+
+  // Fallback: Use session ID
   if (sessionId) {
     req.headers["x-session-id"] = sessionId
   }
+
   return req
 })
 
-// Handle session expiration and automatic logout
+// Handle authentication errors
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       const errorCode = error.response?.data?.code
 
-      // Handle different types of 401 errors
-      if (errorCode === "NO_SESSION" || errorCode === "SESSION_INVALID" || errorCode === "SESSION_ERROR") {
-        // Clear storage
+      // Handle JWT and session-related errors
+      const authErrors = [
+        "NO_AUTH",
+        "TOKEN_INVALIDATED",
+        "TOKEN_EXPIRED",
+        "AUTH_FAILED",
+        "USER_NOT_FOUND",
+        "SESSION_INVALID",
+        "NO_SESSION",
+      ]
+
+      if (authErrors.includes(errorCode)) {
+        // Clear all authentication data
         localStorage.clear()
 
         // Only redirect if not already on login/auth pages
@@ -39,6 +58,7 @@ API.interceptors.response.use(
         }
       }
     }
+
     return Promise.reject(error)
   },
 )

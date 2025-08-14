@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { Box, Paper, Typography, Button, CircularProgress } from "@mui/material"
-import API from "../api"
+import API from "../Api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
 
@@ -14,9 +14,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
+    const accessToken = localStorage.getItem("accessToken")
     const sessionId = localStorage.getItem("sessionId")
 
-    if (!userData || !sessionId) {
+    // Check if user has either JWT token or session ID
+    if (!userData || (!accessToken && !sessionId)) {
       navigate("/login")
       return
     }
@@ -42,9 +44,11 @@ export default function Dashboard() {
 
   const logout = async () => {
     try {
+      // Enhanced logout with both token and session validation
       await API.post("/users/logout")
     } catch (err) {
       console.error("Logout failed", err)
+      // Even if logout fails, clear local storage
     } finally {
       stopSessionMonitoring()
       localStorage.clear()

@@ -1,4 +1,4 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client"
 
 import { useEffect, useState } from "react"
@@ -18,7 +18,7 @@ import {
   DialogActions,
 } from "@mui/material"
 import { useNavigate } from "react-router-dom"
-import { getActiveSessions, terminateSession } from "../utils/SessionManager"
+import API from "../Api"
 
 export default function Sessions() {
   const navigate = useNavigate()
@@ -29,8 +29,10 @@ export default function Sessions() {
   const [confirmDialog, setConfirmDialog] = useState({ open: false, sessionId: null })
 
   useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken")
     const sessionId = localStorage.getItem("sessionId")
-    if (!sessionId) {
+
+    if (!accessToken && !sessionId) {
       navigate("/login")
       return
     }
@@ -41,11 +43,27 @@ export default function Sessions() {
   const loadSessions = async () => {
     try {
       setLoading(true)
-      const sessionData = await getActiveSessions()
-      setSessions(sessionData)
       setError("")
+
+      const response = await API.get("/sessions")
+
+      if (response.data && response.data.sessions) {
+        setSessions(response.data.sessions)
+      } else {
+        setSessions([])
+      }
     } catch (err) {
-      setError("Failed to load sessions")
+      console.error("Failed to load sessions:", err)
+
+      if (err.response?.status === 401) {
+        // Authentication failed, redirect to login
+        localStorage.clear()
+        navigate("/login?reason=session_expired")
+        return
+      }
+
+      setError(err.response?.data?.message || "Failed to load sessions")
+      setSessions([])
     } finally {
       setLoading(false)
     }
@@ -54,9 +72,11 @@ export default function Sessions() {
   const handleTerminateSession = async (sessionId) => {
     try {
       setTerminatingSession(sessionId)
-      const success = await terminateSession(sessionId)
 
-      if (success) {
+      const response = await API.delete(`/sessions/${sessionId}`)
+
+      if (response.status === 200) {
+        // Remove the terminated session from the list
         setSessions(sessions.filter((session) => session.sessionId !== sessionId))
         setConfirmDialog({ open: false, sessionId: null })
         setError("")
@@ -64,22 +84,50 @@ export default function Sessions() {
         setError("Failed to terminate session")
       }
     } catch (err) {
-      setError("Failed to terminate session")
+      console.error("Failed to terminate session:", err)
+      setError(err.response?.data?.message || "Failed to terminate session")
     } finally {
       setTerminatingSession(null)
     }
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString()
+    try {
+      return new Date(dateString).toLocaleString()
+    } catch {
+      return "Invalid Date"
+    }
   }
 
   const getBrowserIcon = (browser) => {
-    if (browser?.toLowerCase().includes("chrome")) return "🌐"
-    if (browser?.toLowerCase().includes("firefox")) return "🦊"
-    if (browser?.toLowerCase().includes("safari")) return "🧭"
-    if (browser?.toLowerCase().includes("edge")) return "🔷"
+    if (!browser) return "💻"
+    const browserLower = browser.toLowerCase()
+    if (browserLower.includes("chrome")) return "🌐"
+    if (browserLower.includes("firefox")) return "🦊"
+    if (browserLower.includes("safari")) return "🧭"
+    if (browserLower.includes("edge")) return "🔷"
     return "💻"
+  }
+
+  const testAuthentication = async () => {
+    try {
+      setError("")
+      const response = await API.get("/session/check")
+
+      if (response.data) {
+        setError("")
+        // Reload sessions after successful auth test
+        loadSessions()
+      }
+    } catch (err) {
+      console.error("Authentication test failed:", err)
+      setError(`Authentication failed: ${err.response?.data?.message || err.message}`)
+
+      if (err.response?.status === 401) {
+        localStorage.clear()
+        navigate("/login?reason=session_expired")
+      }
+    }
   }
 
   if (loading) {
@@ -119,7 +167,15 @@ export default function Sessions() {
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert
+              severity="error"
+              sx={{ mb: 3 }}
+              action={
+                <Button color="inherit" size="small" onClick={testAuthentication}>
+                  Test Auth
+                </Button>
+              }
+            >
               {error}
             </Alert>
           )}
@@ -130,9 +186,14 @@ export default function Sessions() {
           </Typography>
 
           {sessions.length === 0 ? (
-            <Typography variant="body1" sx={{ textAlign: "center", py: 4 }}>
-              No active sessions found.
-            </Typography>
+            <Box sx={{ textAlign: "center", py: 4 }}>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                {error ? "Unable to load sessions due to authentication error." : "No active sessions found."}
+              </Typography>
+              <Button variant="outlined" onClick={loadSessions} disabled={loading}>
+                {loading ? <CircularProgress size={20} /> : "Retry"}
+              </Button>
+            </Box>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {sessions.map((session) => (
@@ -183,9 +244,12 @@ export default function Sessions() {
             </Box>
           )}
 
-          <Box sx={{ mt: 3, textAlign: "center" }}>
-            <Button variant="outlined" onClick={loadSessions}>
-              Refresh Sessions
+          <Box sx={{ mt: 3, textAlign: "center", display: "flex", gap: 2, justifyContent: "center" }}>
+            <Button variant="outlined" onClick={loadSessions} disabled={loading}>
+              {loading ? <CircularProgress size={20} /> : "Refresh Sessions"}
+            </Button>
+            <Button variant="outlined" onClick={testAuthentication}>
+              Test Authentication
             </Button>
           </Box>
         </Paper>

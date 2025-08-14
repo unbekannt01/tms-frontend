@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link } from "@mui/material"
-import API from "../api"
+import API from "../Api"
 import { useNavigate, useLocation } from "react-router-dom"
 import { startSessionMonitoring } from "../utils/SessionManager"
 
@@ -36,7 +36,8 @@ export default function Login() {
     try {
       const { data } = await API.post("/users/login", form)
 
-      // Store sessionId and user data
+      // Store both JWT token and session ID
+      localStorage.setItem("accessToken", data.accessToken)
       localStorage.setItem("sessionId", data.sessionId)
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("loginTime", Date.now().toString())
@@ -48,7 +49,6 @@ export default function Login() {
     } catch (err) {
       if (err.response?.status === 401 && err.response?.data?.code === "SESSION_LIMIT_EXCEEDED") {
         setError("Maximum session limit reached. Your oldest session has been logged out.")
-        // Still proceed with login as backend handles the session limit
         setTimeout(() => {
           window.location.reload()
         }, 2000)

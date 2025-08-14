@@ -11,8 +11,11 @@ export default function Home() {
 
   useEffect(() => {
     const user = localStorage.getItem("user")
+    const accessToken = localStorage.getItem("accessToken")
     const sessionId = localStorage.getItem("sessionId")
-    if (user && sessionId) {
+
+    // Check if user has either JWT token or session ID
+    if (user && (accessToken || sessionId)) {
       setIsAuthenticated(true)
       // Start session monitoring if user is already logged in
       startSessionMonitoring()
