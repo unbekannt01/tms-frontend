@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link } from "@mui/material"
-import API from "../Api"
+import API from "../api"
 import { useNavigate, useLocation } from "react-router-dom"
 import { startSessionMonitoring } from "../utils/SessionManager"
 

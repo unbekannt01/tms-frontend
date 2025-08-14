@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { Box, Paper, Typography, Button, CircularProgress } from "@mui/material"
-import API from "../Api"
+import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
 
