@@ -12,7 +12,20 @@ export default function Home() {
   useEffect(() => {
     const user = localStorage.getItem("user")
     const sessionId = localStorage.getItem("sessionId")
+    const accessToken = localStorage.getItem("accessToken") // <CHANGE> Check for JWT token
+    
     if (user && sessionId) {
+      // <CHANGE> Check if JWT token exists and is not expired
+      if (accessToken) {
+        const tokenExpiresAt = localStorage.getItem("tokenExpiresAt")
+        if (tokenExpiresAt && new Date() > new Date(tokenExpiresAt)) {
+          // Token expired, clear storage and stay on home page
+          localStorage.clear()
+          setIsAuthenticated(false)
+          return
+        }
+      }
+      
       setIsAuthenticated(true)
       // Start session monitoring if user is already logged in
       startSessionMonitoring()

@@ -1,10 +1,10 @@
 /* eslint-disable no-unused-vars */
-// Frontend session management utility for session-based auth
+// Frontend session management utility for JWT + session-based auth
 class SessionManager {
   constructor() {
     this.checkInterval = null
     this.isChecking = false
-    this.baseURL = "http://localhost:3001/api"
+    this.baseURL = "https://nodejs-migration.onrender.com/api"
   }
 
   startSessionCheck() {
@@ -15,8 +15,8 @@ class SessionManager {
     setTimeout(() => {
       this.checkInterval = setInterval(() => {
         this.validateSession()
-      }, 5000) // Check every minute
-    }, 5000)
+      }, 30000) // Check every 30 seconds
+    }, 30000)
   }
 
   stopSessionCheck() {
@@ -30,25 +30,48 @@ class SessionManager {
     if (this.isChecking) return
 
     const sessionId = localStorage.getItem("sessionId")
+    const accessToken = localStorage.getItem("accessToken") // <CHANGE> Get JWT token
+    
     if (!sessionId) {
       this.handleSessionExpired()
       return
     }
 
+    // <CHANGE> Check token expiration client-side first
+    if (accessToken) {
+      const tokenExpiresAt = localStorage.getItem("tokenExpiresAt")
+      if (tokenExpiresAt && new Date() > new Date(tokenExpiresAt)) {
+        this.handleSessionExpired("token_expired")
+        return
+      }
+    }
+
     this.isChecking = true
 
     try {
+      // <CHANGE> Send both session ID and JWT token for validation
+      const headers = {
+        "Content-Type": "application/json",
+        "x-session-id": sessionId,
+      }
+      
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`
+      }
+
       const response = await fetch(`${this.baseURL}/session/check`, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
+        headers,
       })
 
       if (!response.ok) {
         if (response.status === 401) {
-          this.handleSessionExpired()
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.message?.includes("JWT") || errorData.message?.includes("token")) {
+            this.handleSessionExpired("token_expired")
+          } else {
+            this.handleSessionExpired("session_expired")
+          }
         }
       }
     } catch (error) {
@@ -58,9 +81,11 @@ class SessionManager {
     }
   }
 
-  handleSessionExpired() {
-    // Clear local storage
+  handleSessionExpired(reason = "session_expired") {
+    // <CHANGE> Clear all authentication data including JWT token
     localStorage.removeItem("sessionId")
+    localStorage.removeItem("accessToken")
+    localStorage.removeItem("tokenExpiresAt")
     localStorage.removeItem("user")
     localStorage.removeItem("resetToken")
     localStorage.removeItem("resetEmail")
@@ -74,7 +99,7 @@ class SessionManager {
     const authPaths = ["/login", "/register", "/forgot-password", "/verify-otp", "/reset-password", "/"]
 
     if (!authPaths.includes(currentPath)) {
-      window.location.href = "/login?reason=session_expired"
+      window.location.href = `/login?reason=${reason}`
     }
   }
 
@@ -91,13 +116,22 @@ class SessionManager {
   async getActiveSessions() {
     try {
       const sessionId = localStorage.getItem("sessionId")
+      const accessToken = localStorage.getItem("accessToken") // <CHANGE> Get JWT token
+      
       if (!sessionId) return []
 
+      // <CHANGE> Send both session ID and JWT token
+      const headers = {
+        "Content-Type": "application/json",
+        "x-session-id": sessionId,
+      }
+      
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`
+      }
+
       const response = await fetch(`${this.baseURL}/sessions`, {
-        headers: {
-          "Content-Type": "application/json",
-          "x-session-id": sessionId,
-        },
+        headers,
       })
 
       if (response.ok) {
@@ -113,14 +147,23 @@ class SessionManager {
   async terminateSession(sessionIdToTerminate) {
     try {
       const currentSessionId = localStorage.getItem("sessionId")
+      const accessToken = localStorage.getItem("accessToken") // <CHANGE> Get JWT token
+      
       if (!currentSessionId) return false
+
+      // <CHANGE> Send both session ID and JWT token
+      const headers = {
+        "Content-Type": "application/json",
+        "x-session-id": currentSessionId,
+      }
+      
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`
+      }
 
       const response = await fetch(`${this.baseURL}/sessions/${sessionIdToTerminate}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          "x-session-id": currentSessionId,
-        },
+        headers,
       })
 
       return response.ok

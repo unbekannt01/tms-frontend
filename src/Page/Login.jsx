@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link } from "@mui/material"
-import API from "../api"
+import API from "../Api"
 import { useNavigate, useLocation } from "react-router-dom"
 import { startSessionMonitoring } from "../utils/SessionManager"
 
@@ -36,10 +36,16 @@ export default function Login() {
     try {
       const { data } = await API.post("/users/login", form)
 
-      // Store sessionId and user data
+      // Store sessionId, JWT token, and user data
       localStorage.setItem("sessionId", data.sessionId)
+      localStorage.setItem("accessToken", data.accessToken) // <CHANGE> Store JWT token
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("loginTime", Date.now().toString())
+
+      // <CHANGE> Store token expiration time for client-side validation
+      if (data.tokenExpiresAt) {
+        localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt)
+      }
 
       // Start session monitoring
       startSessionMonitoring()

@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { Box, Paper, Typography, Button, CircularProgress } from "@mui/material"
-import API from "../api"
+import API from "../Api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
 
@@ -15,10 +15,22 @@ export default function Dashboard() {
   useEffect(() => {
     const userData = localStorage.getItem("user")
     const sessionId = localStorage.getItem("sessionId")
+    const accessToken = localStorage.getItem("accessToken") // <CHANGE> Check for JWT token
 
     if (!userData || !sessionId) {
       navigate("/login")
       return
+    }
+
+    // <CHANGE> Check if JWT token exists and is not expired
+    if (accessToken) {
+      const tokenExpiresAt = localStorage.getItem("tokenExpiresAt")
+      if (tokenExpiresAt && new Date() > new Date(tokenExpiresAt)) {
+        // Token expired, redirect to login
+        localStorage.clear()
+        navigate("/login?reason=token_expired")
+        return
+      }
     }
 
     try {
@@ -42,6 +54,7 @@ export default function Dashboard() {
 
   const logout = async () => {
     try {
+      // <CHANGE> Send logout request with both session and JWT token
       await API.post("/users/logout")
     } catch (err) {
       console.error("Logout failed", err)
@@ -113,9 +126,9 @@ export default function Dashboard() {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button variant="outlined" sx={{ py: 1.2 }} onClick={viewSessions}>
+          {/* <Button variant="outlined" sx={{ py: 1.2 }} onClick={viewSessions}>
             Manage Sessions
-          </Button>
+          </Button> */}
           <Button variant="outlined" sx={{ py: 1.2 }} onClick={logout}>
             Logout
           </Button>
