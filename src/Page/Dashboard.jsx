@@ -114,7 +114,7 @@ export default function Dashboard() {
       >
         <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
             You can have up to 2 active sessions. When you login from a 3rd device, the oldest session will be
-            automatically logged out <A:blank></A:blank>fter 1 Minute.
+            automatically logged out After 1 Minute.
         </Typography>
         <Typography variant="h4" gutterBottom>
           Welcome to World, {user.firstName}!

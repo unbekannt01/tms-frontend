@@ -11,12 +11,12 @@ class SessionManager {
     // Clear any existing interval
     this.stopSessionCheck()
 
-    // Start periodic checks after 30 seconds
+    // Start periodic checks after 1 minute
     setTimeout(() => {
       this.checkInterval = setInterval(() => {
         this.validateSession()
-      }, 30000) // Check every 30 seconds
-    }, 30000)
+      }, 60000) // Check every 1 minute
+    }, 60000)
   }
 
   stopSessionCheck() {
