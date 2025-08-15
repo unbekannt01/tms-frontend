@@ -11,6 +11,9 @@ export default function VerifyOtp() {
   const [error, setError] = useState("")
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendSuccess, setResendSuccess] = useState("")
 
   useEffect(() => {
     const resetEmail = localStorage.getItem("resetEmail")
@@ -21,10 +24,19 @@ export default function VerifyOtp() {
     setEmail(resetEmail)
   }, [navigate])
 
+  useEffect(() => {
+    let timer
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000)
+    }
+    return () => clearTimeout(timer)
+  }, [resendCooldown])
+
   const handleVerify = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError("")
+    setResendSuccess("")
 
     try {
       const response = await API.post("/verify", { email, otp })
@@ -34,6 +46,23 @@ export default function VerifyOtp() {
       setError(err.response?.data?.message || "Invalid OTP")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    setResendLoading(true)
+    setError("")
+    setResendSuccess("")
+
+    try {
+      const response = await API.post("/resend", { email })
+      setResendSuccess("New OTP sent successfully!")
+      setResendCooldown(60) // 60 second cooldown
+      setOtp("") // Clear current OTP input
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to resend OTP")
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -80,6 +109,12 @@ export default function VerifyOtp() {
           </Alert>
         )}
 
+        {resendSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            {resendSuccess}
+          </Alert>
+        )}
+
         <form onSubmit={handleVerify}>
           <TextField
             label="OTP Code"
@@ -95,6 +130,29 @@ export default function VerifyOtp() {
             {loading ? <CircularProgress size={24} /> : "Verify OTP"}
           </Button>
         </form>
+
+        <Box sx={{ mt: 3, textAlign: "center" }}>
+          <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
+            Didn't receive the code?
+          </Typography>
+          <Button
+            variant="text"
+            onClick={handleResendOtp}
+            disabled={resendLoading || resendCooldown > 0}
+            sx={{ textTransform: "none" }}
+          >
+            {resendLoading ? (
+              <>
+                <CircularProgress size={16} sx={{ mr: 1 }} />
+                Sending...
+              </>
+            ) : resendCooldown > 0 ? (
+              `Resend OTP (${resendCooldown}s)`
+            ) : (
+              "Resend OTP"
+            )}
+          </Button>
+        </Box>
       </Paper>
     </Box>
   )
