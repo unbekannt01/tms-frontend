@@ -125,8 +125,8 @@ export default function Sessions() {
           )}
 
           <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
-            You can have up to 5 active sessions. When you login from a 6th device, the oldest session will be
-            automatically logged out.
+            You can have up to 2 active sessions. When you login from a 3rd device, the oldest session will be
+            automatically logged out <B> after 1 Minute. </B>
           </Typography>
 
           {sessions.length === 0 ? (
