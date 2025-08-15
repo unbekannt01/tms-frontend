@@ -14,8 +14,9 @@ export default function Profile() {
     lastName: "",
     userName: "",
     email: "",
-    phoneNumber: "",
+    age: "",
   })
+  const [initialForm, setInitialForm] = useState(null) // store original values
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState("")
   const [error, setError] = useState("")
@@ -34,15 +35,17 @@ export default function Profile() {
       const parsedUser = JSON.parse(userData)
       setUser(parsedUser)
 
-      setForm({
+      const profileData = {
         firstName: parsedUser.firstName || "",
         lastName: parsedUser.lastName || "",
         userName: parsedUser.userName || "",
         email: parsedUser.email || "",
         age: parsedUser.age || "",
-      })
+      }
 
-      // Start session monitoring
+      setForm(profileData)
+      setInitialForm(profileData) // keep original for comparison
+
       startSessionMonitoring()
     } catch (error) {
       localStorage.clear()
@@ -65,19 +68,27 @@ export default function Profile() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError("")
     setSuccess("")
 
+    // Check if nothing is changed
+    if (JSON.stringify(form) === JSON.stringify(initialForm)) {
+      setSuccess("Nothing to update. Redirecting...")
+      setTimeout(() => {
+        navigate("/dashboard")
+      }, 1500)
+      return
+    }
+
+    setLoading(true)
     try {
       const { data } = await API.put("/users", form)
 
       localStorage.setItem("user", JSON.stringify(data.user))
       setUser(data.user)
-
+      setInitialForm(form) // update original values
       setSuccess("Profile updated successfully!")
 
-      // Auto-redirect to dashboard after 2 seconds
       setTimeout(() => {
         navigate("/dashboard")
       }, 2000)
@@ -202,7 +213,7 @@ export default function Profile() {
           <TextField
             label="Age"
             name="age"
-            type="age"
+            type="text"
             value={form.age}
             fullWidth
             margin="normal"
