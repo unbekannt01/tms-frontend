@@ -1,4 +1,3 @@
-/* eslint-disable no-unused-vars */
 "use client"
 
 import { useEffect, useState } from "react"
@@ -7,7 +6,7 @@ import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
 
-export default function Dashboard() {
+export default function ManagerDashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -24,17 +23,17 @@ export default function Dashboard() {
     try {
       const parsedUser = JSON.parse(userData)
 
-      if (parsedUser.roleId?.name === "admin") {
-        navigate("/admin-dashboard")
-        return
-      } else if (parsedUser.roleId?.name === "manager") {
-        navigate("/manager-dashboard")
+      if (parsedUser.roleId?.name !== "manager") {
+        // Redirect to appropriate dashboard based on role
+        if (parsedUser.roleId?.name === "admin") {
+          navigate("/admin-dashboard")
+        } else {
+          navigate("/dashboard")
+        }
         return
       }
 
       setUser(parsedUser)
-
-      // Start session monitoring
       startSessionMonitoring()
     } catch (error) {
       localStorage.clear()
@@ -59,10 +58,6 @@ export default function Dashboard() {
       localStorage.clear()
       navigate("/")
     }
-  }
-
-  const viewSessions = () => {
-    navigate("/sessions")
   }
 
   if (loading) {
@@ -108,14 +103,14 @@ export default function Dashboard() {
           color: "#000",
         }}
       >
-        <Typography variant="h4" gutterBottom sx={{ color: "#2e7d32" }}>
-          Welcome to User Dashboard, {user.firstName}!
+        <Typography variant="h4" gutterBottom sx={{ color: "#1976d2" }}>
+          Welcome to Manager Dashboard, {user.firstName}!
         </Typography>
-        <Typography variant="h6" sx={{ mb: 2, color: "#2e7d32" }}>
-          {user.roleId?.displayName || "Regular User"}
+        <Typography variant="h6" sx={{ mb: 2, color: "#1976d2" }}>
+          {user.roleId?.displayName || "Task Manager"}
         </Typography>
         <Typography variant="body2" sx={{ mb: 3, fontStyle: "italic" }}>
-          {user.roleId?.description || "Basic user with limited permissions"}
+          {user.roleId?.description || "Can manage team tasks and assign work to others"}
         </Typography>
 
         <Typography variant="body1" sx={{ mb: 2 }}>
@@ -128,12 +123,12 @@ export default function Dashboard() {
           <strong>Email:</strong> {user.email}
         </Typography>
         <Typography variant="body1" sx={{ mb: 3 }}>
-          <strong>Role:</strong> {user.roleId?.name?.toUpperCase() || "USER"}
+          <strong>Role:</strong> {user.roleId?.name?.toUpperCase() || "MANAGER"}
         </Typography>
 
         {user.roleId?.permissions && (
           <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1, color: "#2e7d32" }}>
+            <Typography variant="h6" sx={{ mb: 1, color: "#1976d2" }}>
               Permissions ({user.roleId.permissions.length})
             </Typography>
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
@@ -142,7 +137,7 @@ export default function Dashboard() {
                   key={index}
                   label={permission}
                   size="small"
-                  sx={{ backgroundColor: "#e8f5e8", color: "#2e7d32" }}
+                  sx={{ backgroundColor: "#e3f2fd", color: "#1976d2" }}
                 />
               ))}
             </Box>

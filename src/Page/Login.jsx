@@ -38,11 +38,10 @@ export default function Login() {
 
       // Store sessionId, JWT token, and user data
       localStorage.setItem("sessionId", data.sessionId)
-      localStorage.setItem("accessToken", data.accessToken) // <CHANGE> Store JWT token
+      localStorage.setItem("accessToken", data.accessToken) // Store JWT token
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("loginTime", Date.now().toString())
 
-      // <CHANGE> Store token expiration time for client-side validation
       if (data.tokenExpiresAt) {
         localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt)
       }
@@ -50,7 +49,14 @@ export default function Login() {
       // Start session monitoring
       startSessionMonitoring()
 
-      navigate("/dashboard")
+      const userRole = data.user.roleId.name
+      if (userRole === "admin") {
+        navigate("/admin-dashboard")
+      } else if (userRole === "manager") {
+        navigate("/manager-dashboard")
+      } else {
+        navigate("/dashboard")
+      }
     } catch (err) {
       if (err.response?.status === 401 && err.response?.data?.code === "SESSION_LIMIT_EXCEEDED") {
         setError("Maximum session limit reached. Your oldest session has been logged out.")
