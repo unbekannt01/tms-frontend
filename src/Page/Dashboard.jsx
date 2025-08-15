@@ -15,22 +15,10 @@ export default function Dashboard() {
   useEffect(() => {
     const userData = localStorage.getItem("user")
     const sessionId = localStorage.getItem("sessionId")
-    const accessToken = localStorage.getItem("accessToken") // <CHANGE> Check for JWT token
 
     if (!userData || !sessionId) {
       navigate("/login")
       return
-    }
-
-    // <CHANGE> Check if JWT token exists and is not expired
-    if (accessToken) {
-      const tokenExpiresAt = localStorage.getItem("tokenExpiresAt")
-      if (tokenExpiresAt && new Date() > new Date(tokenExpiresAt)) {
-        // Token expired, redirect to login
-        localStorage.clear()
-        navigate("/login?reason=token_expired")
-        return
-      }
     }
 
     try {
@@ -54,7 +42,6 @@ export default function Dashboard() {
 
   const logout = async () => {
     try {
-      // <CHANGE> Send logout request with both session and JWT token
       await API.post("/users/logout")
     } catch (err) {
       console.error("Logout failed", err)
@@ -112,10 +99,6 @@ export default function Dashboard() {
           color: "#000",
         }}
       >
-        <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
-            You can have up to 2 active sessions. When you login from a 3rd device, the oldest session will be
-            automatically logged out After 1 Minute.
-        </Typography>
         <Typography variant="h4" gutterBottom>
           Welcome to World, {user.firstName}!
         </Typography>
@@ -130,9 +113,12 @@ export default function Dashboard() {
         </Typography>
 
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-          {/* <Button variant="outlined" sx={{ py: 1.2 }} onClick={viewSessions}>
-            Manage Sessions
-          </Button> */}
+          <Button variant="outlined" sx={{ py: 1.2 }} onClick={() => navigate("/profile")}>
+            Edit Profile
+          </Button>
+          <Button variant="outlined" sx={{ py: 1.2 }}>
+            Manage Sessions - Upcoming Feature...
+          </Button>
           <Button variant="outlined" sx={{ py: 1.2 }} onClick={logout}>
             Logout
           </Button>
