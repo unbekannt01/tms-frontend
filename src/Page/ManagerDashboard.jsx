@@ -126,24 +126,6 @@ export default function ManagerDashboard() {
           <strong>Role:</strong> {user.roleId?.name?.toUpperCase() || "MANAGER"}
         </Typography>
 
-        {user.roleId?.permissions && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1, color: "#1976d2" }}>
-              Permissions ({user.roleId.permissions.length})
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, justifyContent: "center" }}>
-              {user.roleId.permissions.map((permission, index) => (
-                <Chip
-                  key={index}
-                  label={permission}
-                  size="small"
-                  sx={{ backgroundColor: "#e3f2fd", color: "#1976d2" }}
-                />
-              ))}
-            </Box>
-          </Box>
-        )}
-
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
           <Button variant="outlined" sx={{ py: 1.2 }} onClick={() => navigate("/profile")}>
             Edit Profile

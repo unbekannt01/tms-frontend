@@ -8,6 +8,7 @@ import Register from "./Page/Register"
 import Dashboard from "./Page/Dashboard"
 import AdminDashboard from "./Page/AdminDashboard"
 import ManagerDashboard from "./Page/ManagerDashboard"
+import RoleManagement from "./Page/RoleManagement"
 import Sessions from "./Page/Session"
 import ForgotPassword from "./Page/ForgotPassword"
 import VerifyOtp from "./Page/VerifyOtp"
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route path="/manager-dashboard" element={<ManagerDashboard />} />
+        <Route path="/role-management" element={<RoleManagement />} />
         <Route path="/sessions" element={<Sessions />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />

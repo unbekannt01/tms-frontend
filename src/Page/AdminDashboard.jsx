@@ -126,7 +126,7 @@ export default function AdminDashboard() {
           <strong>Role:</strong> {user.roleId?.name?.toUpperCase() || "ADMIN"}
         </Typography>
 
-        {user.roleId?.permissions && (
+        {/* {user.roleId?.permissions && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="h6" sx={{ mb: 1, color: "#d32f2f" }}>
               Permissions ({user.roleId.permissions.length})
@@ -142,12 +142,19 @@ export default function AdminDashboard() {
               ))}
             </Box>
           </Box>
-        )}
+        )} */}
 
         <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
           <Button variant="outlined" sx={{ py: 1.2 }} onClick={() => navigate("/profile")}>
             Edit Profile
           </Button>
+          <Button
+            variant="outlined"
+            sx={{ py: 1.2, borderColor: "#d32f2f", color: "#d32f2f", "&:hover": { backgroundColor: "#ffebee" } }}
+            onClick={() => navigate("/role-management")}
+          >
+            Manage Roles
+          </Button> 
           <Button variant="outlined" sx={{ py: 1.2 }}>
             Manage Sessions - Upcoming Feature...
           </Button>

@@ -116,7 +116,7 @@ class SessionManager {
   async getActiveSessions() {
     try {
       const sessionId = localStorage.getItem("sessionId")
-      const accessToken = localStorage.getItem("accessToken") // <CHANGE> Get JWT token
+      const accessToken = localStorage.getItem("accessToken")
       
       if (!sessionId) return []
 
