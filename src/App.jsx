@@ -15,9 +15,7 @@ import { handleAppFocus } from "./utils/SessionManager"
 export default function App() {
   useEffect(() => {
     // Handle app focus and visibility changes for session validation
-    const handleFocus = () => {
-      handleAppFocus()
-    }
+    const handleFocus = () => handleAppFocus()
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -25,7 +23,6 @@ export default function App() {
       }
     }
 
-    // Add event listeners
     window.addEventListener("focus", handleFocus)
     document.addEventListener("visibilitychange", handleVisibilityChange)
 
@@ -46,7 +43,9 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="*" element={<Navigate to="/" />} />
+        
+        {/* Catch-all route: Redirect any unknown path to Home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   )
