@@ -1,7 +1,20 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Divider } from "@mui/material"
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+  Card,
+  CardContent,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material"
 import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
@@ -29,6 +42,9 @@ export default function Profile() {
   const [passwordSuccess, setPasswordSuccess] = useState("")
   const [passwordError, setPasswordError] = useState("")
   const [initialLoading, setInitialLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState("")
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -149,6 +165,20 @@ export default function Profile() {
     }
   }
 
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    setDeleteError("")
+    try {
+      await API.patch(`/users/softDelete/${user._id}`)
+      localStorage.clear()
+      setDeleteLoading(false)
+      navigate("/login", { replace: true })
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || "Failed to delete account")
+      setDeleteLoading(false)
+    }
+  }
+
   if (initialLoading) {
     return (
       <Box
@@ -158,10 +188,10 @@ export default function Profile() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#121212",
+          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         }}
       >
-        <CircularProgress />
+        <CircularProgress sx={{ color: "#059669" }} />
       </Box>
     )
   }
@@ -174,172 +204,511 @@ export default function Profile() {
     <Box
       sx={{
         width: "100vw",
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#121212",
-        py: 2,
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        py: 4,
+        px: 2,
       }}
     >
-      <Paper
-        elevation={8}
+      <Box
         sx={{
-          p: 5,
-          borderRadius: 4,
-          textAlign: "center",
-          maxWidth: 500,
-          width: "100%",
-          color: "#000",
-          maxHeight: "90vh",
-          overflow: "auto",
+          maxWidth: 600,
+          mx: "auto",
         }}
       >
-        <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={() => navigate("/dashboard")}>
-          ← Back to Dashboard
-        </Button>
-
-        <Typography variant="h5" sx={{ mb: 3 }}>
-          Update Profile
-        </Typography>
-
-        {success && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {success}
-          </Alert>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="First Name"
-            name="firstName"
-            type="text"
-            value={form.firstName}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            label="Last Name"
-            name="lastName"
-            type="text"
-            value={form.lastName}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            label="Username"
-            name="userName"
-            type="text"
-            value={form.userName}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            label="Email"
-            name="email"
-            type="email"
-            value={form.email}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            label="Age"
-            name="age"
-            type="number"
-            value={form.age}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-          />
-
-          <Button type="submit" variant="contained" fullWidth sx={{ mt: 3, py: 1.2 }} disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : "Update Profile"}
-          </Button>
-        </form>
-
-        <Divider sx={{ my: 4 }} />
-
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Change Password
-        </Typography>
-
-        {passwordSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            {passwordSuccess}
-          </Alert>
-        )}
-
-        {passwordError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {passwordError}
-          </Alert>
-        )}
-
-        <form onSubmit={handlePasswordSubmit}>
-          <TextField
-            label="Current Password"
-            name="oldPassword"
-            type="password"
-            value={passwordForm.oldPassword}
-            fullWidth
-            margin="normal"
-            onChange={handlePasswordChange}
-            required
-          />
-
-          <TextField
-            label="New Password"
-            name="newPassword"
-            type="password"
-            value={passwordForm.newPassword}
-            fullWidth
-            margin="normal"
-            onChange={handlePasswordChange}
-            required
-            helperText="Minimum 6 characters"
-          />
-
-          <TextField
-            label="Confirm New Password"
-            name="confirmPassword"
-            type="password"
-            value={passwordForm.confirmPassword}
-            fullWidth
-            margin="normal"
-            onChange={handlePasswordChange}
-            required
-          />
-
+        <Box sx={{ mb: 3 }}>
           <Button
-            type="submit"
-            variant="contained"
-            color="warning"
-            fullWidth
-            sx={{ mt: 3, py: 1.2 }}
-            disabled={passwordLoading}
+            variant="outlined"
+            onClick={() => navigate("/dashboard")}
+            sx={{
+              mb: 2,
+              borderColor: "#059669",
+              color: "#059669",
+              fontWeight: 600,
+              "&:hover": {
+                borderColor: "#047857",
+                backgroundColor: "rgba(5, 150, 105, 0.04)",
+              },
+            }}
           >
-            {passwordLoading ? <CircularProgress size={24} /> : "Change Password"}
+            ← Back to Dashboard
           </Button>
-        </form>
-      </Paper>
+        </Box>
+
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            mb: 3,
+            backgroundColor: "#ffffff",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            border: "1px solid rgba(6, 95, 70, 0.1)",
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 1,
+                fontWeight: 700,
+                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Update Profile
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                mb: 4,
+                color: "#6b7280",
+              }}
+            >
+              Keep your information up to date
+            </Typography>
+
+            {success && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                }}
+              >
+                {success}
+              </Alert>
+            )}
+
+            {error && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecaca",
+                }}
+              >
+                {error}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <TextField
+                label="First Name"
+                name="firstName"
+                type="text"
+                value={form.firstName}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#059669",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Last Name"
+                name="lastName"
+                type="text"
+                value={form.lastName}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#059669",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Username"
+                name="userName"
+                type="text"
+                value={form.userName}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#059669",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Email"
+                name="email"
+                type="email"
+                value={form.email}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#059669",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Age"
+                name="age"
+                type="number"
+                value={form.age}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#059669",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  boxShadow: "0 4px 14px 0 rgba(5, 150, 105, 0.3)",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                    boxShadow: "0 6px 20px 0 rgba(5, 150, 105, 0.4)",
+                    transform: "translateY(-1px)",
+                  },
+                  "&:disabled": {
+                    background: "#d1d5db",
+                    boxShadow: "none",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Update Profile"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            backgroundColor: "#ffffff",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+            border: "1px solid rgba(6, 95, 70, 0.1)",
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 1,
+                fontWeight: 600,
+                color: "#dc2626",
+              }}
+            >
+              Change Password
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                mb: 4,
+                color: "#6b7280",
+              }}
+            >
+              Update your password to keep your account secure
+            </Typography>
+
+            {passwordSuccess && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                }}
+              >
+                {passwordSuccess}
+              </Alert>
+            )}
+
+            {passwordError && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecaca",
+                }}
+              >
+                {passwordError}
+              </Alert>
+            )}
+
+            <form onSubmit={handlePasswordSubmit}>
+              <TextField
+                label="Current Password"
+                name="oldPassword"
+                type="password"
+                value={passwordForm.oldPassword}
+                fullWidth
+                margin="normal"
+                onChange={handlePasswordChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#dc2626",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#dc2626",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#dc2626",
+                  },
+                }}
+              />
+
+              <TextField
+                label="New Password"
+                name="newPassword"
+                type="password"
+                value={passwordForm.newPassword}
+                fullWidth
+                margin="normal"
+                onChange={handlePasswordChange}
+                required
+                helperText="Minimum 6 characters"
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#dc2626",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#dc2626",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#dc2626",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Confirm New Password"
+                name="confirmPassword"
+                type="password"
+                value={passwordForm.confirmPassword}
+                fullWidth
+                margin="normal"
+                onChange={handlePasswordChange}
+                required
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    backgroundColor: "#f9fafb",
+                    "&:hover fieldset": {
+                      borderColor: "#dc2626",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#dc2626",
+                      borderWidth: 2,
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#dc2626",
+                  },
+                }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  boxShadow: "0 4px 14px 0 rgba(220,38,38,0.3)",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
+                    boxShadow: "0 6px 20px 0 rgba(220,38,38,0.4)",
+                    transform: "translateY(-1px)",
+                  },
+                  "&:disabled": {
+                    background: "#d1d5db",
+                    boxShadow: "none",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
+                disabled={passwordLoading}
+              >
+                {passwordLoading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Change Password"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            mt: 3,
+            backgroundColor: "#fff",
+            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
+            border: "1px solid rgba(239, 68, 68, 0.2)",
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "#ef4444" }}>
+              Danger Zone
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 3, color: "#6b7280" }}>
+              Once deleted, your account will be permanently removed after <b>30 Days.</b>.
+            </Typography>
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => setDeleteDialogOpen(true)}
+              sx={{
+                py: 1.5,
+                borderRadius: 2,
+                background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
+                boxShadow: "0 4px 14px 0 rgba(220,38,38,0.3)",
+                fontWeight: 600,
+                "&:hover": {
+                  background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
+                  transform: "translateY(-1px)",
+                },
+              }}
+            >
+              Delete My Account
+            </Button>
+
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+              <DialogTitle>Confirm Deletion</DialogTitle>
+              <DialogContent>
+                <Typography>
+                  Are you sure? Your account will be <b>soft deleted</b> now and permanently removed in 5 minutes.
+                </Typography>
+                {deleteError && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    {deleteError}
+                  </Alert>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                <Button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteLoading}
+                  sx={{
+                    color: "#fff",
+                    backgroundColor: "#ef4444",
+                    "&:hover": { backgroundColor: "#dc2626" },
+                  }}
+                >
+                  {deleteLoading ? <CircularProgress size={20} sx={{ color: "#fff" }} /> : "Yes, Delete"}
+                </Button>
+              </DialogActions>
+            </Dialog>
+          </CardContent>
+        </Card>
+      </Box>
     </Box>
   )
 }

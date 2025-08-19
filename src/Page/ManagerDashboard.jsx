@@ -1,143 +1,472 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Box, Paper, Typography, Button, CircularProgress, Chip } from "@mui/material"
-import API from "../api"
-import { useNavigate } from "react-router-dom"
-import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Chip,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+} from "@mui/material";
+import {
+  SupervisorAccount as ManagerIcon,
+  Assignment as TaskIcon,
+  Person as ProfileIcon,
+  ExitToApp as LogoutIcon,
+  TrendingUp as TrendingUpIcon,
+} from "@mui/icons-material";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
+import {
+  startSessionMonitoring,
+  stopSessionMonitoring,
+} from "../utils/SessionManager";
 
 export default function ManagerDashboard() {
-  const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
+  const [clicked, setClicked] = useState(false);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    const sessionId = localStorage.getItem("sessionId")
+    const userData = localStorage.getItem("user");
+    const sessionId = localStorage.getItem("sessionId");
 
     if (!userData || !sessionId) {
-      navigate("/login")
-      return
+      navigate("/login");
+      return;
     }
 
     try {
-      const parsedUser = JSON.parse(userData)
+      const parsedUser = JSON.parse(userData);
 
       if (parsedUser.roleId?.name !== "manager") {
         // Redirect to appropriate dashboard based on role
         if (parsedUser.roleId?.name === "admin") {
-          navigate("/admin-dashboard")
+          navigate("/admin-dashboard");
         } else {
-          navigate("/dashboard")
+          navigate("/dashboard");
         }
-        return
+        return;
       }
 
-      setUser(parsedUser)
-      startSessionMonitoring()
+      setUser(parsedUser);
+      startSessionMonitoring();
     } catch (error) {
-      localStorage.clear()
-      navigate("/login")
-      return
+      localStorage.clear();
+      navigate("/login");
+      return;
     }
 
-    setLoading(false)
+    setLoading(false);
 
     return () => {
-      stopSessionMonitoring()
-    }
-  }, [navigate])
+      stopSessionMonitoring();
+    };
+  }, [navigate]);
 
   const logout = async () => {
     try {
-      await API.post("/users/logout")
+      await API.post("/users/logout");
     } catch (err) {
-      console.error("Logout failed", err)
+      console.error("Logout failed", err);
     } finally {
-      stopSessionMonitoring()
-      localStorage.clear()
-      navigate("/")
+      stopSessionMonitoring();
+      localStorage.clear();
+      navigate("/");
     }
-  }
+  };
+
+  const handleClick = () => {
+    setClicked(true);
+    setTimeout(() => setClicked(false), 2000);
+  };
 
   if (loading) {
     return (
       <Box
         sx={{
-          width: "100vw",
-          height: "100vh",
+          minHeight: "100vh",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#121212",
         }}
       >
-        <CircularProgress />
+        <CircularProgress sx={{ color: "#059669" }} />
       </Box>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
     <Box
       sx={{
-        width: "100vw",
-        height: "100vh",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#121212",
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        py: 4,
       }}
     >
-      <Paper
-        elevation={8}
-        sx={{
-          p: 5,
-          borderRadius: 4,
-          textAlign: "center",
-          maxWidth: 600,
-          width: "100%",
-          color: "#000",
-        }}
-      >
-        <Typography variant="h4" gutterBottom sx={{ color: "#1976d2" }}>
-          Welcome to Manager Dashboard, {user.firstName}!
-        </Typography>
-        <Typography variant="h6" sx={{ mb: 2, color: "#1976d2" }}>
-          {user.roleId?.displayName || "Task Manager"}
-        </Typography>
-        <Typography variant="body2" sx={{ mb: 3, fontStyle: "italic" }}>
-          {user.roleId?.description || "Can manage team tasks and assign work to others"}
-        </Typography>
+      <Container maxWidth="lg">
+        <Box className="fade-in">
+          <Box sx={{ mb: 6 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <ManagerIcon sx={{ fontSize: 40, color: "#d97706" }} />
+              <Box>
+                <Typography
+                  variant="h3"
+                  sx={{
+                    fontWeight: 700,
+                    background:
+                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    mb: 0.5,
+                  }}
+                >
+                  Welcome back, {user.firstName}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Chip
+                    icon={<ManagerIcon />}
+                    label="Manager"
+                    sx={{
+                      backgroundColor: "#fef3c7",
+                      color: "#d97706",
+                      fontWeight: 600,
+                      border: "1px solid #fed7aa",
+                      "& .MuiChip-icon": { color: "#d97706" },
+                    }}
+                  />
+                  <Typography variant="body1" sx={{ color: "#6b7280" }}>
+                    Team leadership and task coordination
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
 
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          <strong>Name:</strong> {user.firstName} {user.lastName}
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          <strong>Username:</strong> {user.userName}
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          <strong>Email:</strong> {user.email}
-        </Typography>
-        <Typography variant="body1" sx={{ mb: 3 }}>
-          <strong>Role:</strong> {user.roleId?.name?.toUpperCase() || "MANAGER"}
-        </Typography>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+              boxShadow:
+                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              border: "1px solid rgba(6, 95, 70, 0.1)",
+              mb: 4,
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 600,
+                mb: 3,
+                color: "#059669",
+              }}
+            >
+              Account Information
+            </Typography>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
+                    Full Name
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
+                    {user.firstName} {user.lastName}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
+                    Username
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
+                    {user.userName}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
+                    Email Address
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
+                    {user.email}
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 2 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
+                    Role
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
+                    {user.roleId?.displayName || "Task Manager"}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
 
-        <Box sx={{ display: "flex", gap: 2, justifyContent: "center", flexWrap: "wrap" }}>
-          <Button variant="outlined" sx={{ py: 1.2 }} onClick={() => navigate("/profile")}>
-            Edit Profile
-          </Button>
-          <Button variant="outlined" sx={{ py: 1.2 }}>
-            Manage Sessions - Upcoming Feature...
-          </Button>
-          <Button variant="outlined" sx={{ py: 1.2 }} onClick={logout}>
-            Logout
-          </Button>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={4}>
+              <Card
+                sx={{
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease-in-out",
+                  backgroundColor: "#ffffff",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  border: "1px solid rgba(6, 95, 70, 0.1)",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    borderColor: "#059669",
+                  },
+                }}
+                onClick={() => navigate("/manager-tasks")}
+              >
+                <CardContent sx={{ p: 4, textAlign: "center" }}>
+                  <TaskIcon sx={{ fontSize: 48, color: "#059669", mb: 2 }} />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 1,
+                      color: "#1f2937",
+                    }}
+                  >
+                    Team Tasks
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                  >
+                    Manage and assign tasks to your team members
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <Card
+                sx={{
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease-in-out",
+                  backgroundColor: "#ffffff",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  border: "1px solid rgba(6, 95, 70, 0.1)",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    borderColor: "#059669",
+                  },
+                }}
+                onClick={() => navigate("/profile")}
+              >
+                <CardContent sx={{ p: 4, textAlign: "center" }}>
+                  <ProfileIcon sx={{ fontSize: 48, color: "#059669", mb: 2 }} />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 1,
+                      color: "#1f2937",
+                    }}
+                  >
+                    Profile Settings
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                  >
+                    Update your personal information and preferences
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <Card
+                onClick={handleClick}
+                sx={{
+                  height: "100%",
+                  backgroundColor: "#ffffff",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  border: "1px solid rgba(6, 95, 70, 0.1)",
+                  cursor: "pointer",
+                  position: "relative",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    borderColor: "#059669",
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 4, textAlign: "center" }}>
+                  <TrendingUpIcon
+                    sx={{ fontSize: 48, color: "#059669", mb: 2 }}
+                  />
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 600, mb: 1, color: "#1f2937" }}
+                  >
+                    Team Analytics
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6, mb: 2 }}
+                  >
+                    View team performance and productivity metrics
+                  </Typography>
+                </CardContent>
+
+                {clicked && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      bgcolor: "rgba(0,0,0,0.6)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontWeight: 600,
+                      fontSize: 18,
+                      borderRadius: 1,
+                    }}
+                  >
+                    Coming Soon!
+                  </Box>
+                )}
+              </Card>
+            </Grid>
+          </Grid>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              border: "1px solid rgba(6, 95, 70, 0.1)",
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                mb: 2,
+                color: "#1f2937",
+              }}
+            >
+              Session Management
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "#6b7280", mb: 3, lineHeight: 1.6 }}
+            >
+              Manage your active sessions and account security
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                justifyContent: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <Button
+                variant="outlined"
+                disabled
+                sx={{
+                  borderColor: "#d1d5db",
+                  color: "#9ca3af",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  px: 3,
+                  py: 1.2,
+                }}
+              >
+                Sessions (Coming Soon)
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<LogoutIcon />}
+                onClick={logout}
+                sx={{
+                  px: 3,
+                  py: 1.2,
+                  borderRadius: 2,
+                  background:
+                    "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  boxShadow: "0 4px 14px 0 rgba(220, 38, 38, 0.3)",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  textTransform: "none",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
+                    boxShadow: "0 6px 20px 0 rgba(220, 38, 38, 0.4)",
+                    transform: "translateY(-1px)",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                }}
+              >
+                Sign Out
+              </Button>
+            </Box>
+          </Paper>
         </Box>
-      </Paper>
+      </Container>
     </Box>
-  )
+  );
 }

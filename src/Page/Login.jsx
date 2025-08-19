@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link } from "@mui/material"
+import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link, Container } from "@mui/material"
 import API from "../api"
 import { useNavigate, useLocation } from "react-router-dom"
 import { startSessionMonitoring } from "../utils/SessionManager"
@@ -18,7 +18,6 @@ export default function Login() {
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState("")
 
   useEffect(() => {
-    // Check if user was redirected due to session expiration
     const urlParams = new URLSearchParams(location.search)
     if (urlParams.get("reason") === "session_expired") {
       setSessionExpiredMessage("Your session has expired. Please login again.")
@@ -36,9 +35,8 @@ export default function Login() {
     try {
       const { data } = await API.post("/users/login", form)
 
-      // Store sessionId, JWT token, and user data
       localStorage.setItem("sessionId", data.sessionId)
-      localStorage.setItem("accessToken", data.accessToken) // Store JWT token
+      localStorage.setItem("accessToken", data.accessToken)
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("loginTime", Date.now().toString())
 
@@ -46,7 +44,6 @@ export default function Login() {
         localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt)
       }
 
-      // Start session monitoring
       startSessionMonitoring()
 
       const userRole = data.user.roleId.name
@@ -60,7 +57,6 @@ export default function Login() {
     } catch (err) {
       if (err.response?.status === 401 && err.response?.data?.code === "SESSION_LIMIT_EXCEEDED") {
         setError("Maximum session limit reached. Your oldest session has been logged out.")
-        // Still proceed with login as backend handles the session limit
         setTimeout(() => {
           window.location.reload()
         }, 2000)
@@ -75,87 +71,187 @@ export default function Login() {
   return (
     <Box
       sx={{
-        width: "100vw",
-        height: "100vh",
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#121212",
-        py: 2,
+        py: 4,
       }}
     >
-      <Paper
-        elevation={8}
-        sx={{
-          p: 5,
-          borderRadius: 4,
-          textAlign: "center",
-          maxWidth: 400,
-          width: "100%",
-          color: "#000",
-          maxHeight: "90vh",
-          overflow: "auto",
-        }}
-      >
-        <Button variant="outlined" size="small" sx={{ mb: 2 }} onClick={() => navigate("/")}>
-          ← Back
-        </Button>
-
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Login
-        </Typography>
-
-        {sessionExpiredMessage && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            {sessionExpiredMessage}
-          </Alert>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="Email or Username"
-            name="emailOrUserName"
-            type="text"
-            value={form.emailOrUserName}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <TextField
-            label="Password"
-            name="password"
-            type="password"
-            value={form.password}
-            fullWidth
-            margin="normal"
-            onChange={handleChange}
-            required
-          />
-
-          <Button type="submit" variant="contained" fullWidth sx={{ mt: 2, py: 1.2 }} disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : "Login"}
-          </Button>
-        </form>
-
-        <Box sx={{ mt: 2 }}>
-          <Link
-            component="button"
-            variant="body2"
-            sx={{ textTransform: "none" }}
-            onClick={() => navigate("/forgot-password")}
+      <Container maxWidth="sm">
+        <Box className="slide-up">
+          <Button
+            variant="text"
+            onClick={() => navigate("/")}
+            sx={{
+              mb: 3,
+              color: "#059669",
+              fontWeight: 500,
+              "&:hover": { backgroundColor: "#f0fdf4" },
+            }}
           >
-            Forgot Password?
-          </Link>
+            ← Back to Home
+          </Button>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 6,
+              borderRadius: 3,
+              background: "#ffffff",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+            }}
+          >
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Typography
+                variant="h4"
+                sx={{
+                  fontFamily: "Manrope, sans-serif",
+                  fontWeight: 600,
+                  color: "#1e293b",
+                  mb: 1,
+                }}
+              >
+                Welcome Back
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: "#64748b",
+                  fontSize: "1.1rem",
+                }}
+              >
+                Sign in to your account to continue
+              </Typography>
+            </Box>
+
+            {sessionExpiredMessage && (
+              <Alert
+                severity="warning"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  "& .MuiAlert-message": { fontSize: "0.95rem" },
+                }}
+              >
+                {sessionExpiredMessage}
+              </Alert>
+            )}
+
+            {error && (
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  "& .MuiAlert-message": { fontSize: "0.95rem" },
+                }}
+              >
+                {error}
+              </Alert>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <TextField
+                label="Email or Username"
+                name="emailOrUserName"
+                type="text"
+                value={form.emailOrUserName}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#059669",
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <TextField
+                label="Password"
+                name="password"
+                type="password"
+                value={form.password}
+                fullWidth
+                margin="normal"
+                onChange={handleChange}
+                required
+                sx={{
+                  mb: 3,
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#059669",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#059669",
+                    },
+                  },
+                  "& .MuiInputLabel-root.Mui-focused": {
+                    color: "#059669",
+                  },
+                }}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                size="large"
+                disabled={loading}
+                sx={{
+                  py: 1.5,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  boxShadow: "0 4px 6px -1px rgb(5 150 105 / 0.3)",
+                  textTransform: "none",
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  mb: 3,
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                    boxShadow: "0 6px 8px -1px rgb(5 150 105 / 0.4)",
+                  },
+                  "&:disabled": {
+                    background: "#94a3b8",
+                    boxShadow: "none",
+                  },
+                }}
+              >
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
+              </Button>
+            </form>
+
+            <Box sx={{ textAlign: "center" }}>
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate("/forgot-password")}
+                sx={{
+                  color: "#059669",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                  "&:hover": { textDecoration: "underline" },
+                }}
+              >
+                Forgot your password?
+              </Link>
+            </Box>
+          </Paper>
         </Box>
-      </Paper>
+      </Container>
     </Box>
   )
 }

@@ -4,7 +4,7 @@ class SessionManager {
   constructor() {
     this.checkInterval = null
     this.isChecking = false
-    this.baseURL = "https://nodejs-migration.onrender.com/api"
+    this.baseURL = import.meta.env.VITE_API_URL
   }
 
   startSessionCheck() {
