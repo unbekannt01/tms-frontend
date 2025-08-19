@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Box, Paper, Button, Typography, Container } from "@mui/material"
+import { Box, Paper, Button, Typography, Container, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring } from "../utils/SessionManager"
 
 export default function Home() {
   const navigate = useNavigate()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [openDialog, setOpenDialog] = useState(false)
 
   useEffect(() => {
     const user = localStorage.getItem("user")
@@ -27,12 +28,17 @@ export default function Home() {
       setIsAuthenticated(true)
       startSessionMonitoring()
       navigate("/dashboard")
+    } else {
+      // Show funny dialog if not authenticated
+      setOpenDialog(true)
     }
   }, [navigate])
 
   if (isAuthenticated) {
     return null
   }
+
+  const handleClose = () => setOpenDialog(false)
 
   return (
     <Box
@@ -153,6 +159,26 @@ export default function Home() {
           </Paper>
         </Box>
       </Container>
+
+      {/* Funny Dialog */}
+      <Dialog open={openDialog} onClose={handleClose}>
+        <DialogTitle>Oops! 😴</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Our backend server is taking a nap… but you can still reach out! <br />
+            Just send a funny mail to{" "}
+            <Box component="span" sx={{ fontWeight: "bold", color: "#059669" }}>
+              testing.buddy1111@gmail.com
+            </Box>{" "}
+            and we’ll wake it up! 🚀
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose} color="primary">
+            Got it!
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   )
 }
