@@ -38,6 +38,7 @@ import {
   Tab,
   Tabs,
   Badge,
+  FormLabel,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -772,62 +773,6 @@ export default function AdminTaskDashboard({ user }) {
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
-        {/* <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4 }}>
-          <Box>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={() => navigate("/profile")}
-              sx={{
-                mb: 3,
-                borderColor: "#059669",
-                color: "#059669",
-                fontWeight: 600,
-                "&:hover": {
-                  borderColor: "#047857",
-                  backgroundColor: "rgba(5, 150, 105, 0.04)",
-                },
-              }}
-            >
-              ← Back to Profile
-            </Button>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                }}
-              >
-                Admin Task Management
-              </Typography>
-              <Chip
-                icon={<AdminIcon />}
-                label="Admin"
-                sx={{
-                  backgroundColor: "#fef2f2",
-                  color: "#dc2626",
-                  fontWeight: 600,
-                  border: "1px solid #fecaca",
-                }}
-                size="small"
-              />
-            </Box>
-            <Typography
-              variant="body1"
-              sx={{
-                color: "#6b7280",
-                fontSize: "1.1rem",
-              }}
-            >
-              Complete system administration and oversight
-            </Typography>
-          </Box>
-        </Box> */}
-
         <Box sx={{ mb: 3 }}>
           <Button
             variant="outlined"
@@ -883,9 +828,13 @@ export default function AdminTaskDashboard({ user }) {
                 <Badge
                   badgeContent={total}
                   sx={{
+                    ml: 1, // 👈 add spacing
                     "& .MuiBadge-badge": {
                       backgroundColor: "#059669",
                       color: "#ffffff",
+                      fontWeight: 600,
+                      minWidth: 22,
+                      height: 22,
                     },
                   }}
                 />
@@ -1229,33 +1178,65 @@ export default function AdminTaskDashboard({ user }) {
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Estimated Hours"
-                    type="number"
-                    value={taskForm.estimatedHours}
-                    onChange={(e) =>
-                      setTaskForm({
-                        ...taskForm,
-                        estimatedHours: e.target.value,
-                      })
-                    }
-                    margin="normal"
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
-                        "&:hover fieldset": {
-                          borderColor: "#059669",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "#059669",
-                        },
-                      },
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#059669",
-                      },
-                    }}
-                  />
+                  <FormControl fullWidth margin="normal">
+                    <Typography
+                      variant="body2"
+                      sx={{ mb: 1, fontWeight: 500, color: "rgba(0,0,0,0.6)" }}
+                    >
+                      Estimated Time
+                    </Typography>
+
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      {/* Hours */}
+                      <Select
+                        value={Math.floor((taskForm.estimatedHours || 0) / 60)}
+                        onChange={(e) => {
+                          const hours = parseInt(e.target.value, 10);
+                          const minutes = (taskForm.estimatedHours || 0) % 60;
+                          const total = hours * 60 + minutes;
+                          if (total <= 24 * 60) {
+                            setTaskForm({ ...taskForm, estimatedHours: total });
+                          }
+                        }}
+                        sx={{ flex: 1 }}
+                      >
+                        {[...Array(25).keys()].map((h) => (
+                          <MenuItem key={h} value={h}>
+                            {String(h).padStart(2, "0")}
+                          </MenuItem>
+                        ))}
+                      </Select>
+
+                      {/* Minutes */}
+                      <Select
+                        value={(taskForm.estimatedHours || 0) % 60}
+                        onChange={(e) => {
+                          const minutes = parseInt(e.target.value, 10);
+                          const hours = Math.floor(
+                            (taskForm.estimatedHours || 0) / 60
+                          );
+                          const total = hours * 60 + minutes;
+                          if (total <= 24 * 60) {
+                            setTaskForm({ ...taskForm, estimatedHours: total });
+                          }
+                        }}
+                        sx={{ flex: 1 }}
+                      >
+                        {[...Array(60).keys()].map((m) => (
+                          <MenuItem key={m} value={m}>
+                            {String(m).padStart(2, "0")}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </Box>
+
+                    <Typography
+                      variant="caption"
+                      sx={{ mt: 1, color: "text.secondary" }}
+                    >
+                      Format: hh:mm (max 24:00)
+                    </Typography>
+                  </FormControl>
                 </Grid>
               </Grid>
               <TextField
