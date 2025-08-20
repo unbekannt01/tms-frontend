@@ -882,7 +882,9 @@ export default function UserTaskDashboard({ user }) {
                   }
                   margin="normal"
                   required
-                  disabled={!selectedTask?.isSelfCreated}
+                  disabled={
+                    dialogMode === "edit" && !selectedTask?.isSelfCreated
+                  }
                 />
                 <TextField
                   fullWidth
@@ -894,25 +896,28 @@ export default function UserTaskDashboard({ user }) {
                   margin="normal"
                   multiline
                   rows={3}
-                  disabled={!selectedTask?.isSelfCreated}
+                  disabled={
+                    dialogMode === "edit" && !selectedTask?.isSelfCreated
+                  }
                 />
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <FormControl fullWidth margin="normal">
-                      <InputLabel>Priority</InputLabel>
+                      <InputLabel>Status</InputLabel>
                       <Select
-                        value={taskForm.priority}
-                        label="Priority"
+                        value={taskForm.status}
+                        label="Status"
                         onChange={(e) =>
-                          setTaskForm({ ...taskForm, priority: e.target.value })
+                          setTaskForm({ ...taskForm, status: e.target.value })
                         }
-                          disabled={!selectedTask?.isSelfCreated}
-
+                        disabled={
+                          dialogMode === "edit" && !selectedTask?.isSelfCreated
+                        }
                       >
-                        <MenuItem value="low">Low</MenuItem>
-                        <MenuItem value="medium">Medium</MenuItem>
-                        <MenuItem value="high">High</MenuItem>
-                        <MenuItem value="urgent">Urgent</MenuItem>
+                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="in-progress">In Progress</MenuItem>
+                        <MenuItem value="completed">Completed</MenuItem>
+                        <MenuItem value="cancelled">Cancelled</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -948,8 +953,9 @@ export default function UserTaskDashboard({ user }) {
                       }
                       margin="normal"
                       InputLabelProps={{ shrink: true }}
-                        disabled={!selectedTask?.isSelfCreated}
-
+                      disabled={
+                        dialogMode === "edit" && !selectedTask?.isSelfCreated
+                      }
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -965,8 +971,9 @@ export default function UserTaskDashboard({ user }) {
                         })
                       }
                       margin="normal"
-                        disabled={!selectedTask?.isSelfCreated}
-
+                      disabled={
+                        dialogMode === "edit" && !selectedTask?.isSelfCreated
+                      }
                     />
                   </Grid>
                 </Grid>
@@ -979,8 +986,9 @@ export default function UserTaskDashboard({ user }) {
                   }
                   margin="normal"
                   helperText="e.g. personal, urgent, learning"
-                    disabled={!selectedTask?.isSelfCreated}
-
+                  disabled={
+                    dialogMode === "edit" && !selectedTask?.isSelfCreated
+                  }
                 />
               </Box>
             )}
