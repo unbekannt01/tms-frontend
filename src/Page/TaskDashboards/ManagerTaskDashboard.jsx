@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   Box,
   Paper,
@@ -34,7 +34,7 @@ import {
   Tab,
   Tabs,
   Badge,
-} from "@mui/material";
+} from "@mui/material"
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -42,59 +42,58 @@ import {
   Cancel as CancelIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
-  SupervisorAccount as ManagerIcon,
   Assignment as AssignmentIcon,
   People as PeopleIcon,
   TrendingUp as TrendingUpIcon,
-} from "@mui/icons-material";
-import API from "../../api";
-import { useNavigate } from "react-router-dom";
+} from "@mui/icons-material"
+import API from "../../api"
+import { useNavigate } from "react-router-dom"
 
 const priorityColors = {
   low: "success",
   medium: "warning",
   high: "error",
   urgent: "error",
-};
+}
 
 const statusColors = {
-  pending: "default",
+  "to-do": "default",
   "in-progress": "info",
   completed: "success",
   cancelled: "error",
-};
+}
 
 const statusIcons = {
-  pending: <ScheduleIcon />,
+  "to-do": <ScheduleIcon />,
   "in-progress": <PlayArrowIcon />,
   completed: <CheckCircleIcon />,
   cancelled: <CancelIcon />,
-};
+}
 
 export default function ManagerTaskDashboard({ user }) {
-  const navigate = useNavigate();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [currentTab, setCurrentTab] = useState(0);
+  const navigate = useNavigate()
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [currentTab, setCurrentTab] = useState(0)
 
   // Pagination
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
 
   // Filters
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
     assignedTo: "",
-  });
+  })
 
   // Dialog states
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState("create");
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false)
+  const [dialogMode, setDialogMode] = useState("create")
+  const [selectedTask, setSelectedTask] = useState(null)
 
   // Form state
   const [taskForm, setTaskForm] = useState({
@@ -109,68 +108,68 @@ export default function ManagerTaskDashboard({ user }) {
   });
 
   // Users and stats
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [taskStats, setTaskStats] = useState(null);
-  const [teamPerformance, setTeamPerformance] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([])
+  const [taskStats, setTaskStats] = useState(null)
+  const [teamPerformance, setTeamPerformance] = useState([])
 
   useEffect(() => {
-    fetchTasks();
-    fetchTeamMembers();
-    fetchTaskStats();
-    fetchTeamPerformance();
-  }, [page, filters, currentTab]);
+    fetchTasks()
+    fetchTeamMembers()
+    fetchTaskStats()
+    fetchTeamPerformance()
+  }, [page, filters, currentTab])
 
   const fetchTasks = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "10",
         scope: "team", // Manager sees team tasks
         ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v)),
-      });
+      })
 
-      const { data } = await API.get(`/tasks?${params}`);
-      setTasks(data.tasks);
-      setTotalPages(data.pagination.totalPages);
-      setTotal(data.pagination.total);
+      const { data } = await API.get(`/tasks?${params}`)
+      setTasks(data.tasks)
+      setTotalPages(data.pagination.totalPages)
+      setTotal(data.pagination.total)
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch tasks");
+      setError(err.response?.data?.message || "Failed to fetch tasks")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchTeamMembers = async () => {
     try {
-      console.log("[v0] Fetching team members...");
-      const { data } = await API.get("/users?roleId.name=user"); // Get team members
-      console.log("[v0] API response:", data);
-      const users = data.users || data || [];
-      console.log("[v0] Extracted users:", users);
-      setTeamMembers(users);
+      console.log("[v0] Fetching team members...")
+      const { data } = await API.get("/users?roleId.name=user") // Get team members
+      console.log("[v0] API response:", data)
+      const users = data.users || data || []
+      console.log("[v0] Extracted users:", users)
+      setTeamMembers(users)
     } catch (err) {
-      console.error("Failed to fetch team members:", err);
+      console.error("Failed to fetch team members:", err)
     }
-  };
+  }
 
   const fetchTaskStats = async () => {
     try {
-      const { data } = await API.get("/tasks/stats?scope=team");
-      setTaskStats(data);
+      const { data } = await API.get("/tasks/stats?scope=team")
+      setTaskStats(data)
     } catch (err) {
-      console.error("Failed to fetch task stats:", err);
+      console.error("Failed to fetch task stats:", err)
     }
-  };
+  }
 
   const fetchTeamPerformance = async () => {
     try {
-      const { data } = await API.get("/tasks/team-performance");
-      setTeamPerformance(data || []);
+      const { data } = await API.get("/tasks/team-performance")
+      setTeamPerformance(data || [])
     } catch (err) {
-      console.error("Failed to fetch team performance:", err);
+      console.error("Failed to fetch team performance:", err)
     }
-  };
+  }
 
   const handleCreateTask = () => {
     setTaskForm({
@@ -182,45 +181,43 @@ export default function ManagerTaskDashboard({ user }) {
       tags: "",
       estimatedHours: "",
       status: "pending",
-    });
-    setDialogMode("create");
-    setOpenDialog(true);
-  };
+    })
+    setDialogMode("create")
+    setOpenDialog(true)
+  }
 
-  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}")
 
   const handleEditTask = (task) => {
-    const assignedToId = task?.assignedTo?._id;
-    const createdById = task?.createdBy?._id;
-    const currentUserId = currentUser?._id;
+    const assignedToId = task?.assignedTo?._id
+    const createdById = task?.createdBy?._id
+    const currentUserId = currentUser?._id
 
     if (!currentUserId) {
-      setError("User not found. Please login again.");
-      return;
+      setError("User not found. Please login again.")
+      return
     }
 
     if (assignedToId !== currentUserId && createdById !== currentUserId) {
-      setError("You can only edit tasks assigned to your team");
-      return;
+      setError("You can only edit tasks assigned to your team")
+      return
     }
 
     setTaskForm({
       title: task.title || "",
       description: task.description || "",
       assignedTo: assignedToId || "",
-      dueDate: task.dueDate
-        ? new Date(task.dueDate).toISOString().split("T")[0]
-        : "",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
       priority: task.priority || "medium",
       tags: task.tags?.join(", ") || "",
       estimatedHours: task.estimatedHours || "",
       status: task.status || "pending",
-    });
+    })
 
-    setSelectedTask(task);
-    setDialogMode("edit");
-    setOpenDialog(true);
-  };
+    setSelectedTask(task)
+    setDialogMode("edit")
+    setOpenDialog(true)
+  }
 
   const handleSubmitTask = async () => {
     try {
@@ -230,27 +227,25 @@ export default function ManagerTaskDashboard({ user }) {
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag),
-        estimatedHours: taskForm.estimatedHours
-          ? Number(taskForm.estimatedHours)
-          : undefined,
-      };
-
-      if (dialogMode === "create") {
-        await API.post("/tasks", formData);
-        setSuccess("Task created and assigned successfully!");
-      } else {
-        await API.put(`/tasks/${selectedTask._id}`, formData);
-        setSuccess("Task updated successfully!");
+        estimatedHours: taskForm.estimatedHours ? Number(taskForm.estimatedHours) : undefined,
       }
 
-      setOpenDialog(false);
-      fetchTasks();
-      fetchTaskStats();
-      fetchTeamPerformance();
+      if (dialogMode === "create") {
+        await API.post("/tasks", formData)
+        setSuccess("Task created and assigned successfully!")
+      } else {
+        await API.put(`/tasks/${selectedTask._id}`, formData)
+        setSuccess("Task updated successfully!")
+      }
+
+      setOpenDialog(false)
+      fetchTasks()
+      fetchTaskStats()
+      fetchTeamPerformance()
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save task");
+      setError(err.response?.data?.message || "Failed to save task")
     }
-  };
+  }
 
   const renderTeamOverviewTab = () => (
     <Box>
@@ -329,10 +324,9 @@ export default function ManagerTaskDashboard({ user }) {
           >
             <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
               {Math.round(
-                ((taskStats?.statusBreakdown?.find((s) => s._id === "completed")
-                  ?.count || 0) /
+                ((taskStats?.statusBreakdown?.find((s) => s._id === "completed")?.count || 0) /
                   (taskStats?.totalTasks || 1)) *
-                  100
+                  100,
               )}
               %
             </Typography>
@@ -349,8 +343,7 @@ export default function ManagerTaskDashboard({ user }) {
           mb: 3,
           borderRadius: 3,
           backgroundColor: "#ffffff",
-          boxShadow:
-            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
@@ -390,24 +383,17 @@ export default function ManagerTaskDashboard({ user }) {
                         height: 56,
                         mx: "auto",
                         mb: 2,
-                        background:
-                          "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                        background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
                         fontSize: "1.5rem",
                         fontWeight: 600,
                       }}
                     >
                       {member.name?.[0]}
                     </Avatar>
-                    <Typography
-                      variant="h6"
-                      sx={{ fontWeight: 600, color: "#1f2937", mb: 1 }}
-                    >
+                    <Typography variant="h6" sx={{ fontWeight: 600, color: "#1f2937", mb: 1 }}>
                       {member.name}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{ color: "#6b7280", mb: 2 }}
-                    >
+                    <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
                       {member.totalTasks} tasks assigned
                     </Typography>
                     <Box
@@ -428,7 +414,7 @@ export default function ManagerTaskDashboard({ user }) {
                         size="small"
                       />
                       <Chip
-                        label={`${member.pendingTasks} pending`}
+                        label={`${member.pendingTasks} to do`}
                         sx={{
                           backgroundColor: "#fef3c7",
                           color: "#92400e",
@@ -445,7 +431,7 @@ export default function ManagerTaskDashboard({ user }) {
         </CardContent>
       </Card>
     </Box>
-  );
+  )
 
   const renderTasksTab = () => (
     <Box>
@@ -477,12 +463,10 @@ export default function ManagerTaskDashboard({ user }) {
               <Select
                 value={filters.status}
                 label="Status"
-                onChange={(e) =>
-                  setFilters({ ...filters, status: e.target.value })
-                }
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="to-do">To Do</MenuItem>
                 <MenuItem value="in-progress">In Progress</MenuItem>
                 <MenuItem value="completed">Completed</MenuItem>
                 <MenuItem value="cancelled">Cancelled</MenuItem>
@@ -495,9 +479,7 @@ export default function ManagerTaskDashboard({ user }) {
               <Select
                 value={filters.priority}
                 label="Priority"
-                onChange={(e) =>
-                  setFilters({ ...filters, priority: e.target.value })
-                }
+                onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
               >
                 <MenuItem value="">All</MenuItem>
                 <MenuItem value="low">Low</MenuItem>
@@ -513,9 +495,7 @@ export default function ManagerTaskDashboard({ user }) {
               <Select
                 value={filters.assignedTo}
                 label="Team Member"
-                onChange={(e) =>
-                  setFilters({ ...filters, assignedTo: e.target.value })
-                }
+                onChange={(e) => setFilters({ ...filters, assignedTo: e.target.value })}
               >
                 <MenuItem value="">All Team</MenuItem>
                 {teamMembers.map((member) => (
@@ -528,11 +508,7 @@ export default function ManagerTaskDashboard({ user }) {
           </Grid>
         </Grid>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateTask}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateTask}>
           Assign Task
         </Button>
       </Box>
@@ -571,11 +547,7 @@ export default function ManagerTaskDashboard({ user }) {
                       {task.title}
                     </Typography>
                     {task.description && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                         {task.description.substring(0, 60)}...
                       </Typography>
                     )}
@@ -583,9 +555,7 @@ export default function ManagerTaskDashboard({ user }) {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar
-                      sx={{ width: 32, height: 32, fontSize: "0.875rem" }}
-                    >
+                    <Avatar sx={{ width: 32, height: 32, fontSize: "0.875rem" }}>
                       {task.assignedTo?.firstName?.[0]}
                       {task.assignedTo?.lastName?.[0]}
                     </Avatar>
@@ -616,15 +586,12 @@ export default function ManagerTaskDashboard({ user }) {
                 <TableCell>
                   {task.dueDate ? (
                     <Box>
-                      <Typography variant="body2">
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </Typography>
-                      {new Date(task.dueDate) < new Date() &&
-                        task.status !== "completed" && (
-                          <Typography variant="caption" color="error">
-                            Overdue
-                          </Typography>
-                        )}
+                      <Typography variant="body2">{new Date(task.dueDate).toLocaleDateString()}</Typography>
+                      {new Date(task.dueDate) < new Date() && task.status !== "completed" && (
+                        <Typography variant="caption" color="error">
+                          Overdue
+                        </Typography>
+                      )}
                     </Box>
                   ) : (
                     <Typography variant="body2" color="text.secondary">
@@ -635,10 +602,7 @@ export default function ManagerTaskDashboard({ user }) {
                 <TableCell>
                   <Stack direction="row" spacing={0.5}>
                     <Tooltip title="Edit Task">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditTask(task)}
-                      >
+                      <IconButton size="small" onClick={() => handleEditTask(task)}>
                         <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
@@ -653,23 +617,17 @@ export default function ManagerTaskDashboard({ user }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, newPage) => setPage(newPage)}
-            color="primary"
-          />
+          <Pagination count={totalPages} page={page} onChange={(_, newPage) => setPage(newPage)} color="primary" />
         </Box>
       )}
     </Box>
-  );
+  )
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         p: 3,
       }}
     >
@@ -680,8 +638,7 @@ export default function ManagerTaskDashboard({ user }) {
           borderRadius: 3,
           width: "100%",
           backgroundColor: "#ffffff",
-          boxShadow:
-            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
@@ -844,9 +801,7 @@ export default function ManagerTaskDashboard({ user }) {
                 fullWidth
                 label="Title *"
                 value={taskForm.title}
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, title: e.target.value })
-                }
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
                 margin="normal"
                 required
                 sx={{
@@ -868,9 +823,7 @@ export default function ManagerTaskDashboard({ user }) {
                 fullWidth
                 label="Description"
                 value={taskForm.description}
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, description: e.target.value })
-                }
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                 margin="normal"
                 multiline
                 rows={3}
@@ -911,9 +864,7 @@ export default function ManagerTaskDashboard({ user }) {
                 <Select
                   value={taskForm.assignedTo}
                   label="Assign To Team Member"
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, assignedTo: e.target.value })
-                  }
+                  onChange={(e) => setTaskForm({ ...taskForm, assignedTo: e.target.value })}
                   MenuProps={{
                     PaperProps: {
                       sx: {
@@ -941,32 +892,23 @@ export default function ManagerTaskDashboard({ user }) {
                           },
                         }}
                       >
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                           <Avatar
                             sx={{
                               width: 32,
                               height: 32,
                               fontSize: "0.875rem",
-                              background:
-                                "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
                             }}
                           >
                             {member.firstName?.[0]}
                             {member.lastName?.[0]}
                           </Avatar>
                           <Box>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 500 }}
-                            >
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
                               {member.firstName} {member.lastName}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
+                            <Typography variant="caption" color="text.secondary">
                               @{member.userName}
                             </Typography>
                           </Box>
@@ -1000,44 +942,22 @@ export default function ManagerTaskDashboard({ user }) {
                     <Select
                       value={taskForm.priority}
                       label="Priority"
-                      onChange={(e) =>
-                        setTaskForm({ ...taskForm, priority: e.target.value })
-                      }
+                      onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
                     >
                       <MenuItem value="low">
-                        <Chip
-                          label="Low"
-                          color="success"
-                          size="small"
-                          sx={{ mr: 1 }}
-                        />
+                        <Chip label="Low" color="success" size="small" sx={{ mr: 1 }} />
                         Low Priority
                       </MenuItem>
                       <MenuItem value="medium">
-                        <Chip
-                          label="Medium"
-                          color="warning"
-                          size="small"
-                          sx={{ mr: 1 }}
-                        />
+                        <Chip label="Medium" color="warning" size="small" sx={{ mr: 1 }} />
                         Medium Priority
                       </MenuItem>
                       <MenuItem value="high">
-                        <Chip
-                          label="High"
-                          color="error"
-                          size="small"
-                          sx={{ mr: 1 }}
-                        />
+                        <Chip label="High" color="error" size="small" sx={{ mr: 1 }} />
                         High Priority
                       </MenuItem>
                       <MenuItem value="urgent">
-                        <Chip
-                          label="Urgent"
-                          color="error"
-                          size="small"
-                          sx={{ mr: 1 }}
-                        />
+                        <Chip label="Urgent" color="error" size="small" sx={{ mr: 1 }} />
                         Urgent Priority
                       </MenuItem>
                     </Select>
@@ -1067,28 +987,14 @@ export default function ManagerTaskDashboard({ user }) {
                       <Select
                         value={taskForm.status}
                         label="Status"
-                        onChange={(e) =>
-                          setTaskForm({ ...taskForm, status: e.target.value })
-                        }
+                        onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
                       >
-                        <MenuItem value="pending">
-                          <Chip
-                            icon={<ScheduleIcon />}
-                            label="Pending"
-                            color="default"
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
-                          Pending
+                        <MenuItem value="to-do">
+                          <Chip icon={<ScheduleIcon />} label="To Do" color="default" size="small" sx={{ mr: 1 }} />
+                          To Do
                         </MenuItem>
                         <MenuItem value="in-progress">
-                          <Chip
-                            icon={<PlayArrowIcon />}
-                            label="In Progress"
-                            color="info"
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
+                          <Chip icon={<PlayArrowIcon />} label="In Progress" color="info" size="small" sx={{ mr: 1 }} />
                           In Progress
                         </MenuItem>
                         <MenuItem value="completed">
@@ -1102,13 +1008,7 @@ export default function ManagerTaskDashboard({ user }) {
                           Completed
                         </MenuItem>
                         <MenuItem value="cancelled">
-                          <Chip
-                            icon={<CancelIcon />}
-                            label="Cancelled"
-                            color="error"
-                            size="small"
-                            sx={{ mr: 1 }}
-                          />
+                          <Chip icon={<CancelIcon />} label="Cancelled" color="error" size="small" sx={{ mr: 1 }} />
                           Cancelled
                         </MenuItem>
                       </Select>
@@ -1123,9 +1023,7 @@ export default function ManagerTaskDashboard({ user }) {
                     label="Due Date"
                     type="date"
                     value={taskForm.dueDate}
-                    onChange={(e) =>
-                      setTaskForm({ ...taskForm, dueDate: e.target.value })
-                    }
+                    onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                     margin="normal"
                     InputLabelProps={{ shrink: true }}
                     sx={{
@@ -1145,43 +1043,192 @@ export default function ManagerTaskDashboard({ user }) {
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <TextField
-                    fullWidth
-                    label="Estimated Hours"
-                    type="number"
-                    value={taskForm.estimatedHours}
-                    onChange={(e) =>
-                      setTaskForm({
-                        ...taskForm,
-                        estimatedHours: e.target.value,
-                      })
-                    }
-                    margin="normal"
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: 2,
-                        "&:hover fieldset": {
-                          borderColor: "#059669",
+                  <FormControl fullWidth>
+                    <Typography variant="body2" sx={{ mb: 0.5, fontWeight: 600, color: "rgba(0,0,0,0.8)" }}>
+                      Estimated Time
+                    </Typography>
+
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 2,
+                        p: 2,
+                        border: "2px solid #e0e7ff",
+                        borderRadius: "12px",
+                        background: "linear-gradient(135deg, #f8faff 0%, #f1f5ff 100%)",
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          borderColor: "#3b82f6",
+                          boxShadow: "0 4px 12px rgba(59, 130, 246, 0.15)",
+                          transform: "translateY(-1px)",
                         },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "#059669",
-                        },
-                      },
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#059669",
-                      },
-                    }}
-                  />
+                      }}
+                    >
+                      {/* Hours Input */}
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: "#6366f1",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            mb: 1,
+                            display: "block",
+                          }}
+                        >
+                          Hours
+                        </Typography>
+                        <Select
+                          value={Math.floor((taskForm.estimatedHours || 0) / 60)}
+                          onChange={(e) => {
+                            const hours = Number.parseInt(e.target.value, 10)
+                            const minutes = (taskForm.estimatedHours || 0) % 60
+                            const total = hours * 60 + minutes
+                            if (total <= 24 * 60) {
+                              setTaskForm({ ...taskForm, estimatedHours: total })
+                            }
+                          }}
+                          sx={{
+                            minWidth: "80px",
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "8px",
+                              backgroundColor: "white",
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                              textAlign: "center",
+                              "& fieldset": {
+                                borderColor: "#d1d5db",
+                              },
+                              "&:hover fieldset": {
+                                borderColor: "#3b82f6",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#3b82f6",
+                                borderWidth: "2px",
+                              },
+                            },
+                            "& .MuiSelect-select": {
+                              textAlign: "center",
+                              color: "#1f2937",
+                            },
+                          }}
+                        >
+                          {[...Array(25).keys()].map((h) => (
+                            <MenuItem key={h} value={h}>
+                              {String(h).padStart(2, "0")}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </Box>
+
+                      {/* Separator */}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          pt: 3,
+                        }}
+                      >
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            color: "#6366f1",
+                            fontWeight: 700,
+                            animation: "pulse 2s infinite",
+                          }}
+                        >
+                          :
+                        </Typography>
+                      </Box>
+
+                      {/* Minutes Input */}
+                      <Box sx={{ flex: 1, textAlign: "center" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: "#6366f1",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.5px",
+                            mb: 1,
+                            display: "block",
+                          }}
+                        >
+                          Minutes
+                        </Typography>
+                        <Select
+                          value={(taskForm.estimatedHours || 0) % 60}
+                          onChange={(e) => {
+                            const minutes = Number.parseInt(e.target.value, 10)
+                            const hours = Math.floor((taskForm.estimatedHours || 0) / 60)
+                            const total = hours * 60 + minutes
+                            if (total <= 24 * 60) {
+                              setTaskForm({ ...taskForm, estimatedHours: total })
+                            }
+                          }}
+                          sx={{
+                            minWidth: "80px",
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "8px",
+                              backgroundColor: "white",
+                              fontSize: "1.1rem",
+                              fontWeight: 600,
+                              textAlign: "center",
+                              "& fieldset": {
+                                borderColor: "#d1d5db",
+                              },
+                              "&:hover fieldset": {
+                                borderColor: "#3b82f6",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#3b82f6",
+                                borderWidth: "2px",
+                              },
+                            },
+                            "& .MuiSelect-select": {
+                              textAlign: "center",
+                              color: "#1f2937",
+                            },
+                          }}
+                        >
+                          {[0, 15, 30, 45].map((m) => (
+                            <MenuItem key={m} value={m}>
+                              {String(m).padStart(2, "0")}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </Box>
+                    </Box>
+
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        mt: 1,
+                        color: "#6b7280",
+                        fontStyle: "italic",
+                        textAlign: "center",
+                        display: "block",
+                      }}
+                    >
+                      💡 Select hours and minutes (max 24:00)
+                    </Typography>
+
+                    <style jsx>{`
+                      @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.5; }
+                      }
+                    `}</style>
+                  </FormControl>
                 </Grid>
               </Grid>
               <TextField
                 fullWidth
                 label="Tags (comma separated)"
                 value={taskForm.tags}
-                onChange={(e) =>
-                  setTaskForm({ ...taskForm, tags: e.target.value })
-                }
-                margin="normal"
+                onChange={(e) => setTaskForm({ ...taskForm, tags: e.target.value })}
                 helperText="e.g. frontend, urgent, bug-fix"
                 sx={{
                   "& .MuiOutlinedInput-root": {
@@ -1230,8 +1277,7 @@ export default function ManagerTaskDashboard({ user }) {
                 borderRadius: 2,
                 px: 3,
                 "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                  background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                   boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
                 },
                 "&:disabled": {
@@ -1246,5 +1292,5 @@ export default function ManagerTaskDashboard({ user }) {
         </Dialog>
       </Paper>
     </Box>
-  );
+  )
 }

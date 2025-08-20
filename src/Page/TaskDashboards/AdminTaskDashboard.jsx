@@ -1178,65 +1178,208 @@ export default function AdminTaskDashboard({ user }) {
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <FormControl fullWidth margin="normal">
+                  <Box sx={{ mt: 2 }}>
                     <Typography
-                      variant="body2"
-                      sx={{ mb: 1, fontWeight: 500, color: "rgba(0,0,0,0.6)" }}
+                      variant="subtitle2"
+                      sx={{
+                        mb: 1,
+                        color: "#374151",
+                        fontWeight: 600,
+                        fontSize: "0.875rem",
+                      }}
                     >
                       Estimated Time
                     </Typography>
-
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      {/* Hours */}
-                      <Select
-                        value={Math.floor((taskForm.estimatedHours || 0) / 60)}
-                        onChange={(e) => {
-                          const hours = parseInt(e.target.value, 10);
-                          const minutes = (taskForm.estimatedHours || 0) % 60;
-                          const total = hours * 60 + minutes;
-                          if (total <= 24 * 60) {
-                            setTaskForm({ ...taskForm, estimatedHours: total });
-                          }
-                        }}
-                        sx={{ flex: 1 }}
-                      >
-                        {[...Array(25).keys()].map((h) => (
-                          <MenuItem key={h} value={h}>
-                            {String(h).padStart(2, "0")}
-                          </MenuItem>
-                        ))}
-                      </Select>
-
-                      {/* Minutes */}
-                      <Select
-                        value={(taskForm.estimatedHours || 0) % 60}
-                        onChange={(e) => {
-                          const minutes = parseInt(e.target.value, 10);
-                          const hours = Math.floor(
-                            (taskForm.estimatedHours || 0) / 60
-                          );
-                          const total = hours * 60 + minutes;
-                          if (total <= 24 * 60) {
-                            setTaskForm({ ...taskForm, estimatedHours: total });
-                          }
-                        }}
-                        sx={{ flex: 1 }}
-                      >
-                        {[...Array(60).keys()].map((m) => (
-                          <MenuItem key={m} value={m}>
-                            {String(m).padStart(2, "0")}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Box>
-
-                    <Typography
-                      variant="caption"
-                      sx={{ mt: 1, color: "text.secondary" }}
+                    <Box
+                      sx={{
+                        background:
+                          "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)",
+                        border: "2px solid #e2e8f0",
+                        borderRadius: 3,
+                        p: 2.5,
+                        transition: "all 0.3s ease",
+                        "&:hover": {
+                          borderColor: "#059669",
+                          boxShadow: "0 4px 12px rgba(5, 150, 105, 0.15)",
+                        },
+                      }}
                     >
-                      Format: hh:mm (max 24:00)
-                    </Typography>
-                  </FormControl>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 2,
+                        }}
+                      >
+                        {/* HOURS */}
+                        <Box sx={{ textAlign: "center" }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: "block",
+                              mb: 1,
+                              color: "#6366f1",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            HOURS
+                          </Typography>
+                          <FormControl>
+                            <Select
+                              value={Math.floor(taskForm.estimatedHours || 0)}
+                              onChange={(e) => {
+                                let hours =
+                                  Number.parseInt(e.target.value) || 0;
+                                if (hours > 24) hours = 24;
+
+                                let minutes =
+                                  (taskForm.estimatedHours || 0) % 1;
+
+                                // If hours = 24 → force minutes = 0
+                                if (hours === 24) {
+                                  minutes = 0;
+                                }
+
+                                setTaskForm({
+                                  ...taskForm,
+                                  estimatedHours: hours + minutes,
+                                });
+                              }}
+                              sx={{
+                                width: 80,
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 2,
+                                  backgroundColor: "#ffffff",
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "#6366f1",
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: "#6366f1",
+                                    },
+                                },
+                                "& .MuiSelect-select": {
+                                  textAlign: "center",
+                                  fontWeight: 600,
+                                  fontSize: "1.1rem",
+                                },
+                              }}
+                            >
+                              {Array.from({ length: 25 }, (_, i) => (
+                                <MenuItem key={i} value={i}>
+                                  {i}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+
+                        {/* Separator */}
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            color: "#6366f1",
+                            fontWeight: 300,
+                            animation: "pulse 2s infinite",
+                            "@keyframes pulse": {
+                              "0%, 100%": { opacity: 1 },
+                              "50%": { opacity: 0.5 },
+                            },
+                          }}
+                        >
+                          :
+                        </Typography>
+
+                        {/* MINUTES */}
+                        <Box sx={{ textAlign: "center" }}>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: "block",
+                              mb: 1,
+                              color: "#8b5cf6",
+                              fontWeight: 700,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            MINUTES
+                          </Typography>
+                          <FormControl>
+                            <Select
+                              value={Math.round(
+                                ((taskForm.estimatedHours || 0) % 1) * 60
+                              )}
+                              onChange={(e) => {
+                                const hours = Math.floor(
+                                  taskForm.estimatedHours || 0
+                                );
+                                let minutes =
+                                  Number.parseInt(e.target.value) / 60;
+
+                                // Prevent minutes when hours = 24
+                                if (hours === 24) {
+                                  minutes = 0;
+                                }
+
+                                setTaskForm({
+                                  ...taskForm,
+                                  estimatedHours: hours + minutes,
+                                });
+                              }}
+                              disabled={
+                                Math.floor(taskForm.estimatedHours || 0) === 24
+                              } // disable when hours = 24
+                              sx={{
+                                width: 80,
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 2,
+                                  backgroundColor: "#ffffff",
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "#8b5cf6",
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: "#8b5cf6",
+                                    },
+                                },
+                                "& .MuiSelect-select": {
+                                  textAlign: "center",
+                                  fontWeight: 600,
+                                  fontSize: "1.1rem",
+                                },
+                              }}
+                            >
+                              {Array.from({ length: 60 }, (_, i) => (
+                                <MenuItem key={i} value={i}>
+                                  {i.toString().padStart(2, "0")}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      </Box>
+
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          display: "block",
+                          textAlign: "center",
+                          mt: 1.5,
+                          color: "#f59e0b",
+                          fontWeight: 500,
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        💡 Select hours and minutes (max 24:00)
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
               </Grid>
               <TextField

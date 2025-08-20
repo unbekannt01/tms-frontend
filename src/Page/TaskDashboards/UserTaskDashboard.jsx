@@ -45,12 +45,13 @@ import {
   Cancel as CancelIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
-  Person as PersonIcon,
   Assignment as AssignmentIcon,
   Dashboard as DashboardIcon,
+  Delete as DeleteIcon, // Added delete icon import
 } from "@mui/icons-material";
 import API from "../../api";
 import { useNavigate } from "react-router-dom";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 const priorityColors = {
   low: "success",
@@ -60,17 +61,24 @@ const priorityColors = {
 };
 
 const statusColors = {
-  pending: "default",
+  "to-do": "default",
   "in-progress": "info",
   completed: "success",
   cancelled: "error",
 };
 
 const statusIcons = {
-  pending: <ScheduleIcon />,
+  "to-do": <ScheduleIcon />,
   "in-progress": <PlayArrowIcon />,
   completed: <CheckCircleIcon />,
   cancelled: <CancelIcon />,
+};
+
+const formatEstimatedHours = (hours) => {
+  if (!hours) return "0h 0m";
+  const wholeHours = Math.floor(hours);
+  const minutes = Math.round((hours % 1) * 60);
+  return `${wholeHours}h ${minutes}m`;
 };
 
 export default function UserTaskDashboard({ user }) {
@@ -103,6 +111,9 @@ export default function UserTaskDashboard({ user }) {
   const [dialogMode, setDialogMode] = useState("create");
   const [selectedTask, setSelectedTask] = useState(null);
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+
   // Form state
   const [taskForm, setTaskForm] = useState({
     title: "",
@@ -111,7 +122,7 @@ export default function UserTaskDashboard({ user }) {
     priority: "medium",
     tags: "",
     estimatedHours: "",
-    status: "pending",
+    status: "to-do", // Changed default status from "pending" to "to-do"
   });
 
   // Comments
@@ -167,7 +178,7 @@ export default function UserTaskDashboard({ user }) {
       priority: "medium",
       tags: "",
       estimatedHours: "",
-      status: "pending",
+      status: "to-do", // Changed default status from "pending" to "to-do"
     });
     setDialogMode("create");
     setOpenDialog(true);
@@ -251,6 +262,26 @@ export default function UserTaskDashboard({ user }) {
       setError(err.response?.data?.message || "Failed to add comment");
     } finally {
       setCommentLoading(false);
+    }
+  };
+
+  const handleDeleteTask = (task) => {
+    setTaskToDelete(task);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteTask = async () => {
+    try {
+      await API.delete(`/tasks/${taskToDelete._id}`);
+      setSuccess("Task deleted successfully!");
+      setDeleteConfirmOpen(false);
+      setTaskToDelete(null);
+      fetchTasks();
+      fetchTaskStats();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete task");
+      setDeleteConfirmOpen(false);
+      setTaskToDelete(null);
     }
   };
 
@@ -470,7 +501,8 @@ export default function UserTaskDashboard({ user }) {
                 }
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="to-do">To Do</MenuItem>{" "}
+                {/* Updated from "pending" to "to-do" */}
                 <MenuItem value="in-progress">In Progress</MenuItem>
                 <MenuItem value="completed">Completed</MenuItem>
                 <MenuItem value="cancelled">Cancelled</MenuItem>
@@ -529,108 +561,128 @@ export default function UserTaskDashboard({ user }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {tasks.map((task) => (
-              <TableRow key={task._id} hover>
-                <TableCell>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {task.title}
-                    </Typography>
-                    {task.description && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                      >
-                        {task.description.substring(0, 60)}...
-                      </Typography>
-                    )}
-                    {task.tags && task.tags.length > 0 && (
-                      <Box
-                        sx={{
-                          mt: 1,
-                          display: "flex",
-                          gap: 0.5,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {task.tags.slice(0, 2).map((tag, index) => (
-                          <Chip
-                            key={index}
-                            label={tag}
-                            size="small"
-                            variant="outlined"
-                          />
-                        ))}
-                        {task.tags.length > 2 && (
-                          <Chip
-                            label={`+${task.tags.length - 2}`}
-                            size="small"
-                            variant="outlined"
-                          />
-                        )}
-                      </Box>
-                    )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={task.priority}
-                    color={priorityColors[task.priority]}
-                    size="small"
-                    sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    icon={statusIcons[task.status]}
-                    label={task.status.replace("-", " ")}
-                    color={statusColors[task.status]}
-                    size="small"
-                    sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  {task.dueDate ? (
+            {tasks.map((task) => {
+              const isSelfCreated = task.createdBy?._id === currentUser._id;
+
+              return (
+                <TableRow key={task._id} hover>
+                  <TableCell>
                     <Box>
-                      <Typography variant="body2">
-                        {new Date(task.dueDate).toLocaleDateString()}
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {task.title}
                       </Typography>
-                      {new Date(task.dueDate) < new Date() &&
-                        task.status !== "completed" && (
-                          <Typography variant="caption" color="error">
-                            Overdue
-                          </Typography>
-                        )}
+                      {task.description && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {task.description.substring(0, 60)}...
+                        </Typography>
+                      )}
+                      {task.tags && task.tags.length > 0 && (
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: "flex",
+                            gap: 0.5,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          {task.tags.slice(0, 2).map((tag, index) => (
+                            <Chip
+                              key={index}
+                              label={tag}
+                              size="small"
+                              variant="outlined"
+                            />
+                          ))}
+                          {task.tags.length > 2 && (
+                            <Chip
+                              label={`+${task.tags.length - 2}`}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </Box>
+                      )}
                     </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No due date
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={0.5}>
-                    <Tooltip title="View Details">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewTask(task)}
-                      >
-                        <ViewIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Task">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditTask(task)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={task.priority}
+                      color={priorityColors[task.priority]}
+                      size="small"
+                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      icon={statusIcons[task.status]}
+                      label={task.status.replace("-", " ")}
+                      color={statusColors[task.status]}
+                      size="small"
+                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {task.dueDate ? (
+                      <Box>
+                        <Typography variant="body2">
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </Typography>
+                        {new Date(task.dueDate) < new Date() &&
+                          task.status !== "completed" && (
+                            <Typography variant="caption" color="error">
+                              Overdue
+                            </Typography>
+                          )}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No due date
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="View Details">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewTask(task)}
+                        >
+                          <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Edit Task">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditTask(task)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      {isSelfCreated && (
+                        <Tooltip title="Delete Task">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteTask(task)}
+                            sx={{
+                              color: "#dc2626",
+                              "&:hover": {
+                                backgroundColor: "rgba(220, 38, 38, 0.04)",
+                              },
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -771,105 +823,526 @@ export default function UserTaskDashboard({ user }) {
           onClose={() => setOpenDialog(false)}
           maxWidth="md"
           fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              overflow: "hidden",
+            },
+          }}
         >
-          <DialogTitle>
-            {dialogMode === "create" && "Create Personal Task"}
+          <DialogTitle
+            sx={{
+              background: "linear-gradient(135deg, #0d9488 0%, #059669 100%)",
+              color: "white",
+              py: 3,
+              px: 4,
+              fontSize: "1.5rem",
+              fontWeight: 600,
+              letterSpacing: "0.025em",
+              textAlign: "left",
+              borderBottom: "none",
+            }}
+          >
+            {dialogMode === "create" && "Create New Task"}
             {dialogMode === "edit" && "Edit Task"}
             {dialogMode === "view" && "Task Details"}
           </DialogTitle>
 
-          <DialogContent>
+          <DialogContent
+            sx={{
+              backgroundColor: "#fafafa",
+              px: 4,
+              py: 3,
+              minHeight: "400px",
+            }}
+          >
             {dialogMode === "view" && selectedTask ? (
               <Box>
-                <Typography variant="h6" gutterBottom>
-                  {selectedTask.title}
-                </Typography>
-                <Typography variant="body1" paragraph>
-                  {selectedTask.description}
-                </Typography>
+                {/* Basic Information Card */}
+                <Card
+                  sx={{
+                    mb: 3,
+                    borderRadius: 3,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        mb: 2,
+                        color: "#0d9488",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      📋 Task Information
+                    </Typography>
 
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2">Priority:</Typography>
-                    <Chip
-                      label={selectedTask.priority}
-                      color={priorityColors[selectedTask.priority]}
-                      size="small"
-                    />
-                  </Grid>
-                  <Grid item xs={6}>
-                    <Typography variant="subtitle2">Status:</Typography>
-                    <Chip
-                      label={selectedTask.status}
-                      color={statusColors[selectedTask.status]}
-                      size="small"
-                    />
-                  </Grid>
-                  {selectedTask.dueDate && (
-                    <Grid item xs={6}>
-                      <Typography variant="subtitle2">Due Date:</Typography>
-                      <Typography>
-                        {new Date(selectedTask.dueDate).toLocaleDateString()}
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          mb: 1,
+                          fontWeight: 600,
+                          color: "#374151",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        📝 Title
                       </Typography>
-                    </Grid>
-                  )}
-                  {selectedTask.estimatedHours && (
-                    <Grid item xs={6}>
-                      <Typography variant="subtitle2">
-                        Estimated Hours:
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          wordBreak: "break-word",
+                          lineHeight: 1.4,
+                          color: "#1f2937",
+                          fontWeight: 600,
+                          p: 2,
+                          backgroundColor: "#f8fafc",
+                          borderRadius: 2,
+                          border: "1px solid #e2e8f0",
+                        }}
+                      >
+                        {selectedTask.title}
                       </Typography>
-                      <Typography>{selectedTask.estimatedHours}</Typography>
+                    </Box>
+
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          mb: 1,
+                          fontWeight: 600,
+                          color: "#374151",
+                          fontSize: "0.875rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px",
+                        }}
+                      >
+                        📄 Description
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          wordBreak: "break-word",
+                          lineHeight: 1.6,
+                          whiteSpace: "pre-wrap",
+                          color: "#374151",
+                          p: 2,
+                          backgroundColor: "#f8fafc",
+                          borderRadius: 2,
+                          border: "1px solid #e2e8f0",
+                          minHeight: "60px",
+                        }}
+                      >
+                        {selectedTask.description || "No description provided"}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+
+                {/* Status & Priority Card */}
+                <Card
+                  sx={{
+                    mb: 3,
+                    borderRadius: 3,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        mb: 2,
+                        color: "#0d9488",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      🎯 Status & Priority
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                      <Grid item xs={6}>
+                        <Box
+                          sx={{
+                            p: 2,
+                            backgroundColor: "#fef3c7",
+                            borderRadius: 2,
+                            border: "1px solid #fbbf24",
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              mb: 1,
+                              fontWeight: 600,
+                              color: "#92400e",
+                              fontSize: "0.875rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                            }}
+                          >
+                            🚀 Priority
+                          </Typography>
+                          <Chip
+                            label={selectedTask.priority}
+                            color={priorityColors[selectedTask.priority]}
+                            size="medium"
+                            sx={{
+                              textTransform: "capitalize",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                            }}
+                          />
+                        </Box>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Box
+                          sx={{
+                            p: 2,
+                            backgroundColor: "#dbeafe",
+                            borderRadius: 2,
+                            border: "1px solid #3b82f6",
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{
+                              mb: 1,
+                              fontWeight: 600,
+                              color: "#1e40af",
+                              fontSize: "0.875rem",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.5px",
+                            }}
+                          >
+                            📊 Status
+                          </Typography>
+                          <Chip
+                            icon={statusIcons[selectedTask.status]}
+                            label={selectedTask.status.replace("-", " ")}
+                            color={statusColors[selectedTask.status]}
+                            size="medium"
+                            sx={{
+                              textTransform: "capitalize",
+                              fontWeight: 600,
+                              fontSize: "0.875rem",
+                            }}
+                          />
+                        </Box>
+                      </Grid>
                     </Grid>
-                  )}
-                </Grid>
+                  </CardContent>
+                </Card>
+
+                {/* Timeline & Details Card */}
+                <Card
+                  sx={{
+                    mb: 3,
+                    borderRadius: 3,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        mb: 2,
+                        color: "#0d9488",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      ⏰ Timeline & Details
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                      {selectedTask.dueDate && (
+                        <Grid item xs={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              backgroundColor: "#fce7f3",
+                              borderRadius: 2,
+                              border: "1px solid #ec4899",
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              sx={{
+                                mb: 1,
+                                fontWeight: 600,
+                                color: "#be185d",
+                                fontSize: "0.875rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                              }}
+                            >
+                              📅 Due Date
+                            </Typography>
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 600,
+                                color: "#1f2937",
+                              }}
+                            >
+                              {new Date(
+                                selectedTask.dueDate
+                              ).toLocaleDateString()}
+                            </Typography>
+                            {new Date(selectedTask.dueDate) < new Date() &&
+                              selectedTask.status !== "completed" && (
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: "block",
+                                    fontWeight: 600,
+                                    color: "#dc2626",
+                                    mt: 0.5,
+                                    fontSize: "0.75rem",
+                                  }}
+                                >
+                                  ⚠️ Overdue
+                                </Typography>
+                              )}
+                          </Box>
+                        </Grid>
+                      )}
+                      {selectedTask.estimatedHours && (
+                        <Grid item xs={6}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              backgroundColor: "#ecfdf5",
+                              borderRadius: 2,
+                              border: "1px solid #10b981",
+                            }}
+                          >
+                            <Typography
+                              variant="subtitle2"
+                              sx={{
+                                mb: 1,
+                                fontWeight: 600,
+                                color: "#047857",
+                                fontSize: "0.875rem",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                              }}
+                            >
+                              ⏱️ Estimated Time
+                            </Typography>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              <AccessTimeIcon
+                                fontSize="small"
+                                sx={{ color: "#059669" }}
+                              />
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: "#059669",
+                                  fontSize: "1.1rem",
+                                }}
+                              >
+                                {formatEstimatedHours(
+                                  selectedTask.estimatedHours
+                                )}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </CardContent>
+                </Card>
+
+                {/* Tags Card */}
+                {selectedTask.tags && selectedTask.tags.length > 0 && (
+                  <Card
+                    sx={{
+                      mb: 3,
+                      borderRadius: 3,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <CardContent sx={{ p: 3 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 2,
+                          color: "#0d9488",
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        🏷️ Tags
+                      </Typography>
+                      <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                        {selectedTask.tags.map((tag, index) => (
+                          <Chip
+                            key={index}
+                            label={tag}
+                            size="medium"
+                            variant="outlined"
+                            sx={{
+                              borderColor: "#0d9488",
+                              color: "#0d9488",
+                              fontWeight: 500,
+                              "&:hover": {
+                                backgroundColor: "#f0fdfa",
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Comments Section */}
-                <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-                  Comments ({selectedTask.comments?.length || 0})
-                </Typography>
+                <Card
+                  sx={{
+                    borderRadius: 3,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        mb: 2,
+                        color: "#0d9488",
+                        fontWeight: 700,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      💬 Comments ({selectedTask.comments?.length || 0})
+                    </Typography>
 
-                {selectedTask.comments?.map((comment, index) => (
-                  <Card key={index} variant="outlined" sx={{ mb: 2 }}>
-                    <CardContent sx={{ py: 2 }}>
+                    {selectedTask.comments?.map((comment, index) => (
+                      <Card
+                        key={index}
+                        variant="outlined"
+                        sx={{ mb: 2, borderRadius: 2 }}
+                      >
+                        <CardContent sx={{ py: 2 }}>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                            sx={{ fontWeight: 500 }}
+                          >
+                            {comment.author?.firstName}{" "}
+                            {comment.author?.lastName} •{" "}
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              wordBreak: "break-word",
+                              lineHeight: 1.6,
+                              whiteSpace: "pre-wrap",
+                            }}
+                          >
+                            {comment.text}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    ))}
+
+                    {selectedTask.comments?.length === 0 && (
                       <Typography
                         variant="body2"
                         color="text.secondary"
-                        gutterBottom
+                        sx={{
+                          textAlign: "center",
+                          py: 3,
+                          fontStyle: "italic",
+                          backgroundColor: "#f8fafc",
+                          borderRadius: 2,
+                          border: "1px dashed #cbd5e1",
+                        }}
                       >
-                        {comment.author?.firstName} {comment.author?.lastName} •{" "}
-                        {new Date(comment.createdAt).toLocaleString()}
+                        💭 No comments yet
                       </Typography>
-                      <Typography variant="body1">{comment.text}</Typography>
-                    </CardContent>
-                  </Card>
-                ))}
+                    )}
 
-                {/* Add Comment */}
-                <Box sx={{ mt: 2 }}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    sx={{ mb: 2 }}
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim() || commentLoading}
-                    startIcon={
-                      commentLoading ? (
-                        <CircularProgress size={16} />
-                      ) : (
-                        <CommentIcon />
-                      )
-                    }
-                  >
-                    Add Comment
-                  </Button>
-                </Box>
+                    {/* Add Comment */}
+                    <Box sx={{ mt: 3 }}>
+                      <TextField
+                        fullWidth
+                        multiline
+                        rows={3}
+                        placeholder="Add a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        sx={{
+                          mb: 2,
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            backgroundColor: "white",
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#0d9488",
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#0d9488",
+                            },
+                          },
+                        }}
+                      />
+                      <Button
+                        variant="contained"
+                        onClick={handleAddComment}
+                        disabled={!newComment.trim() || commentLoading}
+                        startIcon={
+                          commentLoading ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <CommentIcon />
+                          )
+                        }
+                        sx={{
+                          background:
+                            "linear-gradient(135deg, #0d9488 0%, #059669 100%)",
+                          borderRadius: 2,
+                          px: 3,
+                          py: 1,
+                          fontWeight: 600,
+                          textTransform: "none",
+                          "&:hover": {
+                            background:
+                              "linear-gradient(135deg, #0f766e 0%, #047857 100%)",
+                          },
+                        }}
+                      >
+                        Add Comment
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
               </Box>
             ) : (
               <Box sx={{ pt: 1 }}>
@@ -885,7 +1358,23 @@ export default function UserTaskDashboard({ user }) {
                   disabled={
                     dialogMode === "edit" && !selectedTask?.isSelfCreated
                   }
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      backgroundColor: "white",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#0d9488",
+                    },
+                  }}
                 />
+
                 <TextField
                   fullWidth
                   label="Description"
@@ -899,48 +1388,95 @@ export default function UserTaskDashboard({ user }) {
                   disabled={
                     dialogMode === "edit" && !selectedTask?.isSelfCreated
                   }
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      backgroundColor: "white",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#0d9488",
+                    },
+                  }}
                 />
+
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <FormControl fullWidth margin="normal">
-                      <InputLabel>Status</InputLabel>
+                      <InputLabel
+                        sx={{ "&.Mui-focused": { color: "#0d9488" } }}
+                      >
+                        Status
+                      </InputLabel>
                       <Select
                         value={taskForm.status}
                         label="Status"
                         onChange={(e) =>
                           setTaskForm({ ...taskForm, status: e.target.value })
                         }
-                        disabled={
-                          dialogMode === "edit" && !selectedTask?.isSelfCreated
-                        }
+                        sx={{
+                          borderRadius: 2,
+                          backgroundColor: "white",
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#0d9488",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#0d9488",
+                          },
+                        }}
                       >
-                        <MenuItem value="pending">Pending</MenuItem>
+                        <MenuItem value="to-do">To Do</MenuItem>{" "}
+                        {/* Updated from "pending" to "to-do" */}
                         <MenuItem value="in-progress">In Progress</MenuItem>
                         <MenuItem value="completed">Completed</MenuItem>
                         <MenuItem value="cancelled">Cancelled</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={6}>
-                    {dialogMode === "edit" && (
+                  {(dialogMode === "create" ||
+                    (dialogMode === "edit" && selectedTask?.isSelfCreated)) && (
+                    <Grid item xs={6}>
                       <FormControl fullWidth margin="normal">
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                          value={taskForm.status}
-                          label="Status"
-                          onChange={(e) =>
-                            setTaskForm({ ...taskForm, status: e.target.value })
-                          }
+                        <InputLabel
+                          sx={{ "&.Mui-focused": { color: "#0d9488" } }}
                         >
-                          <MenuItem value="pending">Pending</MenuItem>
-                          <MenuItem value="in-progress">In Progress</MenuItem>
-                          <MenuItem value="completed">Completed</MenuItem>
-                          <MenuItem value="cancelled">Cancelled</MenuItem>
+                          Priority
+                        </InputLabel>
+                        <Select
+                          value={taskForm.priority}
+                          label="Priority"
+                          onChange={(e) =>
+                            setTaskForm({
+                              ...taskForm,
+                              priority: e.target.value,
+                            })
+                          }
+                          sx={{
+                            borderRadius: 2,
+                            backgroundColor: "white",
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#0d9488",
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#0d9488",
+                            },
+                          }}
+                        >
+                          <MenuItem value="low">Low</MenuItem>
+                          <MenuItem value="medium">Medium</MenuItem>
+                          <MenuItem value="high">High</MenuItem>
+                          <MenuItem value="urgent">Urgent</MenuItem>
                         </Select>
                       </FormControl>
-                    )}
-                  </Grid>
+                    </Grid>
+                  )}
                 </Grid>
+
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
                     <TextField
@@ -956,27 +1492,208 @@ export default function UserTaskDashboard({ user }) {
                       disabled={
                         dialogMode === "edit" && !selectedTask?.isSelfCreated
                       }
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          backgroundColor: "white",
+                          "&:hover .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#0d9488",
+                          },
+                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "#0d9488",
+                          },
+                        },
+                      }}
                     />
                   </Grid>
                   <Grid item xs={6}>
-                    <TextField
-                      fullWidth
-                      label="Estimated Hours"
-                      type="number"
-                      value={taskForm.estimatedHours}
-                      onChange={(e) =>
-                        setTaskForm({
-                          ...taskForm,
-                          estimatedHours: e.target.value,
-                        })
-                      }
-                      margin="normal"
-                      disabled={
-                        dialogMode === "edit" && !selectedTask?.isSelfCreated
-                      }
-                    />
+                    <Box>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          mb: 1,
+                          color: "#374151",
+                          fontWeight: 600,
+                          fontSize: "0.875rem",
+                        }}
+                      >
+                        Estimated Time
+                      </Typography>
+                      <Box
+                        sx={{
+                          background:
+                            "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+                          border: "2px solid #e2e8f0",
+                          borderRadius: 3,
+                          p: 2.5,
+                          transition: "all 0.3s ease",
+                          "&:hover": {
+                            borderColor: "#0d9488",
+                            boxShadow: "0 4px 12px rgba(13, 148, 136, 0.15)",
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 2,
+                          }}
+                        >
+                          <Box sx={{ textAlign: "center" }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: "block",
+                                mb: 1,
+                                color: "#0d9488",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              HOURS
+                            </Typography>
+                            <TextField
+                              type="number"
+                              value={Math.floor(taskForm.estimatedHours || 0)}
+                              onChange={(e) => {
+                                const hours =
+                                  Number.parseInt(e.target.value) || 0;
+                                const minutes =
+                                  (taskForm.estimatedHours || 0) % 1;
+                                setTaskForm({
+                                  ...taskForm,
+                                  estimatedHours: hours + minutes,
+                                });
+                              }}
+                              inputProps={{ min: 0, max: 24 }}
+                              disabled={
+                                dialogMode === "edit" &&
+                                !selectedTask?.isSelfCreated
+                              }
+                              sx={{
+                                width: 80,
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 2,
+                                  backgroundColor: "#ffffff",
+                                  "& input": {
+                                    textAlign: "center",
+                                    fontWeight: 600,
+                                    fontSize: "1.1rem",
+                                  },
+                                  "&:hover .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "#0d9488",
+                                  },
+                                  "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                    {
+                                      borderColor: "#0d9488",
+                                    },
+                                },
+                              }}
+                            />
+                          </Box>
+
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: "#0d9669",
+                              fontWeight: 300,
+                              animation: "pulse 2s infinite",
+                              "@keyframes pulse": {
+                                "0%, 100%": { opacity: 1 },
+                                "50%": { opacity: 0.5 },
+                              },
+                            }}
+                          >
+                            :
+                          </Typography>
+
+                          <Box sx={{ textAlign: "center" }}>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                display: "block",
+                                mb: 1,
+                                color: "#059669",
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                letterSpacing: "0.5px",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              MINUTES
+                            </Typography>
+                            <FormControl>
+                              <Select
+                                value={Math.round(
+                                  ((taskForm.estimatedHours || 0) % 1) * 60
+                                )}
+                                onChange={(e) => {
+                                  const hours = Math.floor(
+                                    taskForm.estimatedHours || 0
+                                  );
+                                  const minutes =
+                                    Number.parseInt(e.target.value) / 60;
+                                  setTaskForm({
+                                    ...taskForm,
+                                    estimatedHours: hours + minutes,
+                                  });
+                                }}
+                                disabled={
+                                  dialogMode === "edit" &&
+                                  !selectedTask?.isSelfCreated
+                                }
+                                sx={{
+                                  width: 80,
+                                  "& .MuiOutlinedInput-root": {
+                                    borderRadius: 2,
+                                    backgroundColor: "#ffffff",
+                                    "&:hover .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        borderColor: "#059669",
+                                      },
+                                    "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                      {
+                                        borderColor: "#059669",
+                                      },
+                                  },
+                                  "& .MuiSelect-select": {
+                                    textAlign: "center",
+                                    fontWeight: 600,
+                                    fontSize: "1.1rem",
+                                  },
+                                }}
+                              >
+                                <MenuItem value={0}>00</MenuItem>
+                                <MenuItem value={15}>15</MenuItem>
+                                <MenuItem value={30}>30</MenuItem>
+                                <MenuItem value={45}>45</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        </Box>
+
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            display: "block",
+                            textAlign: "center",
+                            mt: 1.5,
+                            color: "#f59e0b",
+                            fontWeight: 500,
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          💡 Select hours and minutes (max 24:00)
+                        </Typography>
+                      </Box>
+                    </Box>
                   </Grid>
                 </Grid>
+
                 <TextField
                   fullWidth
                   label="Tags (comma separated)"
@@ -984,25 +1701,97 @@ export default function UserTaskDashboard({ user }) {
                   onChange={(e) =>
                     setTaskForm({ ...taskForm, tags: e.target.value })
                   }
-                  margin="normal"
                   helperText="e.g. personal, urgent, learning"
                   disabled={
                     dialogMode === "edit" && !selectedTask?.isSelfCreated
                   }
+                  sx={{
+                    mt: 2,
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                      backgroundColor: "white",
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#0d9488",
+                      },
+                    },
+                    "& .MuiInputLabel-root.Mui-focused": {
+                      color: "#0d9488",
+                    },
+                  }}
                 />
               </Box>
             )}
           </DialogContent>
 
-          <DialogActions>
-            <Button onClick={() => setOpenDialog(false)}>
+          <DialogActions
+            sx={{
+              backgroundColor: "#ffffff",
+              px: 4,
+              py: 3,
+              borderTop: "1px solid #e5e7eb",
+              gap: 2,
+            }}
+          >
+            <Button
+              onClick={() => setOpenDialog(false)}
+              sx={{
+                borderRadius: 2,
+                px: 3,
+                py: 1,
+                textTransform: "none",
+                fontWeight: 500,
+              }}
+            >
               {dialogMode === "view" ? "Close" : "Cancel"}
             </Button>
             {dialogMode !== "view" && (
-              <Button variant="contained" onClick={handleSubmitTask}>
+              <Button
+                variant="contained"
+                onClick={handleSubmitTask}
+                sx={{
+                  background:
+                    "linear-gradient(135deg, #0d9488 0%, #059669 100%)",
+                  borderRadius: 2,
+                  px: 4,
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #0f766e 0%, #047857 100%)",
+                    boxShadow: "0 6px 8px -1px rgba(0, 0, 0, 0.15)",
+                  },
+                }}
+              >
                 {dialogMode === "create" ? "Create Task" : "Update Task"}
               </Button>
             )}
+          </DialogActions>
+        </Dialog>
+        <Dialog
+          open={deleteConfirmOpen}
+          onClose={() => setDeleteConfirmOpen(false)}
+        >
+          <DialogTitle>Confirm Delete</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete the task "{taskToDelete?.title}"?
+              This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={confirmDeleteTask}
+            >
+              Delete
+            </Button>
           </DialogActions>
         </Dialog>
       </Paper>
