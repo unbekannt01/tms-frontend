@@ -1,44 +1,54 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Box, Paper, Button, Typography, Container, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material"
-import { useNavigate } from "react-router-dom"
-import { startSessionMonitoring } from "../utils/SessionManager"
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Paper,
+  Button,
+  Typography,
+  Container,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { startSessionMonitoring } from "../utils/SessionManager";
 
 export default function Home() {
-  const navigate = useNavigate()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [openDialog, setOpenDialog] = useState(false)
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
 
   useEffect(() => {
-    const user = localStorage.getItem("user")
-    const sessionId = localStorage.getItem("sessionId")
-    const accessToken = localStorage.getItem("accessToken")
+    const user = localStorage.getItem("user");
+    const sessionId = localStorage.getItem("sessionId");
+    const accessToken = localStorage.getItem("accessToken");
 
     if (user && sessionId) {
       if (accessToken) {
-        const tokenExpiresAt = localStorage.getItem("tokenExpiresAt")
+        const tokenExpiresAt = localStorage.getItem("tokenExpiresAt");
         if (tokenExpiresAt && new Date() > new Date(tokenExpiresAt)) {
-          localStorage.clear()
-          setIsAuthenticated(false)
-          return
+          localStorage.clear();
+          setIsAuthenticated(false);
+          return;
         }
       }
 
-      setIsAuthenticated(true)
-      startSessionMonitoring()
-      navigate("/dashboard")
+      setIsAuthenticated(true);
+      startSessionMonitoring();
+      navigate("/dashboard");
     } else {
       // Show funny dialog if not authenticated
-      setOpenDialog(true)
+      setOpenDialog(true);
     }
-  }, [navigate])
+  }, [navigate]);
 
   if (isAuthenticated) {
-    return null
+    return null;
   }
 
-  const handleClose = () => setOpenDialog(false)
+  const handleClose = () => setOpenDialog(false);
 
   return (
     <Box
@@ -87,7 +97,8 @@ export default function Home() {
               borderRadius: 3,
               background: "#ffffff",
               border: "1px solid #e2e8f0",
-              boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+              boxShadow:
+                "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
             }}
           >
             <Typography
@@ -109,7 +120,8 @@ export default function Home() {
                 fontSize: "1.1rem",
               }}
             >
-              Sign in to access your personalized dashboard and manage your tasks efficiently.
+              Sign in to access your personalized dashboard and manage your
+              tasks efficiently.
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -121,13 +133,15 @@ export default function Home() {
                   py: 1.5,
                   px: 4,
                   borderRadius: 2,
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  background:
+                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
                   boxShadow: "0 4px 6px -1px rgb(5 150 105 / 0.3)",
                   textTransform: "none",
                   fontSize: "1.1rem",
                   fontWeight: 600,
                   "&:hover": {
-                    background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                    background:
+                      "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                     boxShadow: "0 6px 8px -1px rgb(5 150 105 / 0.4)",
                   },
                 }}
@@ -162,23 +176,24 @@ export default function Home() {
 
       {/* Funny Dialog */}
       <Dialog open={openDialog} onClose={handleClose}>
-        <DialogTitle>Oops! 😴</DialogTitle>
+        <DialogTitle>Uh-oh! 😴</DialogTitle>
         <DialogContent>
           <Typography>
-            Our backend server is taking a nap… but you can still reach out! <br />
-            Just send a funny mail to{" "}
+            Looks like our server decided to take a coffee break ☕ (probably
+            sleeping under the desk). If you really need access, just poke us by
+            sending an email to{" "}
             <Box component="span" sx={{ fontWeight: "bold", color: "#059669" }}>
               testing.buddy1111@gmail.com
             </Box>{" "}
-            and we’ll wake it up! 🚀
+            and we’ll wake it up with extra-strong espresso! 🚀
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} color="primary">
-            Got it!
+            Haha, okay!
           </Button>
         </DialogActions>
       </Dialog>
     </Box>
-  )
+  );
 }
