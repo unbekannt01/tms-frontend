@@ -187,25 +187,36 @@ export default function ManagerTaskDashboard({ user }) {
     setOpenDialog(true);
   };
 
+  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}");
+
   const handleEditTask = (task) => {
-    // Manager can only edit team tasks
-    if (task.assignedTo?._id !== user._id && task.createdBy?._id !== user._id) {
+    const assignedToId = task?.assignedTo?._id;
+    const createdById = task?.createdBy?._id;
+    const currentUserId = currentUser?._id;
+
+    if (!currentUserId) {
+      setError("User not found. Please login again.");
+      return;
+    }
+
+    if (assignedToId !== currentUserId && createdById !== currentUserId) {
       setError("You can only edit tasks assigned to your team");
       return;
     }
 
     setTaskForm({
-      title: task.title,
-      description: task.description,
-      assignedTo: task.assignedTo._id,
+      title: task.title || "",
+      description: task.description || "",
+      assignedTo: assignedToId || "",
       dueDate: task.dueDate
         ? new Date(task.dueDate).toISOString().split("T")[0]
         : "",
-      priority: task.priority,
+      priority: task.priority || "medium",
       tags: task.tags?.join(", ") || "",
       estimatedHours: task.estimatedHours || "",
-      status: task.status,
+      status: task.status || "pending",
     });
+
     setSelectedTask(task);
     setDialogMode("edit");
     setOpenDialog(true);
@@ -785,9 +796,13 @@ export default function ManagerTaskDashboard({ user }) {
                 <Badge
                   badgeContent={total}
                   sx={{
+                    ml: 1,
                     "& .MuiBadge-badge": {
                       backgroundColor: "#059669",
                       color: "#ffffff",
+                      fontWeight: 600,
+                      minWidth: 22,
+                      height: 22,
                     },
                   }}
                 />

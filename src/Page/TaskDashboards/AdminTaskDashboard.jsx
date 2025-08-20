@@ -828,7 +828,7 @@ export default function AdminTaskDashboard({ user }) {
                 <Badge
                   badgeContent={total}
                   sx={{
-                    ml: 1, // 👈 add spacing
+                    ml: 1,
                     "& .MuiBadge-badge": {
                       backgroundColor: "#059669",
                       color: "#ffffff",
@@ -1010,7 +1010,7 @@ export default function AdminTaskDashboard({ user }) {
                 </Select>
               </FormControl>
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={dialogMode === "create" ? 12 : 6}>
                   <FormControl
                     fullWidth
                     margin="normal"
@@ -1076,8 +1076,8 @@ export default function AdminTaskDashboard({ user }) {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={6}>
-                  {dialogMode === "edit" && (
+                {dialogMode === "edit" && (
+                  <Grid item xs={6}>
                     <FormControl
                       fullWidth
                       margin="normal"
@@ -1146,8 +1146,8 @@ export default function AdminTaskDashboard({ user }) {
                         </MenuItem>
                       </Select>
                     </FormControl>
-                  )}
-                </Grid>
+                  </Grid>
+                )}
               </Grid>
               <Grid container spacing={2}>
                 <Grid item xs={6}>

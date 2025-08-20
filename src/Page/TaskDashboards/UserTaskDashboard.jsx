@@ -174,10 +174,7 @@ export default function UserTaskDashboard({ user }) {
   };
 
   const handleEditTask = (task) => {
-    if (task.assignedTo?._id !== currentUser._id) {
-      setError("You can only edit your own tasks");
-      return;
-    }
+    const isSelfCreated = task.createdBy?._id === currentUser._id;
 
     setTaskForm({
       title: task.title,
@@ -190,7 +187,7 @@ export default function UserTaskDashboard({ user }) {
       estimatedHours: task.estimatedHours || "",
       status: task.status,
     });
-    setSelectedTask(task);
+    setSelectedTask({ ...task, isSelfCreated });
     setDialogMode("edit");
     setOpenDialog(true);
   };
@@ -750,9 +747,13 @@ export default function UserTaskDashboard({ user }) {
                 <Badge
                   badgeContent={total}
                   sx={{
+                    ml: 1, // 👈 add spacing
                     "& .MuiBadge-badge": {
                       backgroundColor: "#059669",
                       color: "#ffffff",
+                      fontWeight: 600,
+                      minWidth: 22,
+                      height: 22,
                     },
                   }}
                 />
@@ -881,6 +882,7 @@ export default function UserTaskDashboard({ user }) {
                   }
                   margin="normal"
                   required
+                  disabled={!selectedTask?.isSelfCreated}
                 />
                 <TextField
                   fullWidth
@@ -892,6 +894,7 @@ export default function UserTaskDashboard({ user }) {
                   margin="normal"
                   multiline
                   rows={3}
+                  disabled={!selectedTask?.isSelfCreated}
                 />
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
@@ -903,6 +906,8 @@ export default function UserTaskDashboard({ user }) {
                         onChange={(e) =>
                           setTaskForm({ ...taskForm, priority: e.target.value })
                         }
+                          disabled={!selectedTask?.isSelfCreated}
+
                       >
                         <MenuItem value="low">Low</MenuItem>
                         <MenuItem value="medium">Medium</MenuItem>
@@ -943,6 +948,8 @@ export default function UserTaskDashboard({ user }) {
                       }
                       margin="normal"
                       InputLabelProps={{ shrink: true }}
+                        disabled={!selectedTask?.isSelfCreated}
+
                     />
                   </Grid>
                   <Grid item xs={6}>
@@ -958,6 +965,8 @@ export default function UserTaskDashboard({ user }) {
                         })
                       }
                       margin="normal"
+                        disabled={!selectedTask?.isSelfCreated}
+
                     />
                   </Grid>
                 </Grid>
@@ -970,6 +979,8 @@ export default function UserTaskDashboard({ user }) {
                   }
                   margin="normal"
                   helperText="e.g. personal, urgent, learning"
+                    disabled={!selectedTask?.isSelfCreated}
+
                 />
               </Box>
             )}
