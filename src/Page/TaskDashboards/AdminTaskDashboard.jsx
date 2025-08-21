@@ -38,7 +38,6 @@ import {
   Tab,
   Tabs,
   Badge,
-  FormLabel,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -64,8 +63,10 @@ const priorityColors = {
   urgent: "error",
 };
 
+// 🔧 FIXED STATUS MAPPING - Handle both "todo" and "pending"
 const statusColors = {
   pending: "default",
+  todo: "default", // Map "todo" to same as "pending"
   "in-progress": "info",
   completed: "success",
   cancelled: "error",
@@ -73,9 +74,27 @@ const statusColors = {
 
 const statusIcons = {
   pending: <ScheduleIcon />,
+  todo: <ScheduleIcon />, // Map "todo" to same as "pending"
   "in-progress": <PlayArrowIcon />,
   completed: <CheckCircleIcon />,
   cancelled: <CancelIcon />,
+};
+
+// 🔧 STATUS NORMALIZATION FUNCTION
+const normalizeStatus = (status) => {
+  // Convert "todo" to "pending" for display consistency
+  if (status === "todo") return "pending";
+  return status || "pending";
+};
+
+// 🔧 STATUS DISPLAY FUNCTION
+const getStatusDisplay = (status) => {
+  const normalized = normalizeStatus(status);
+  return {
+    label: normalized.replace("-", " "),
+    color: statusColors[normalized] || statusColors.pending,
+    icon: statusIcons[normalized] || statusIcons.pending,
+  };
 };
 
 export default function AdminTaskDashboard({ user }) {
@@ -103,7 +122,7 @@ export default function AdminTaskDashboard({ user }) {
   const [dialogMode, setDialogMode] = useState("create");
   const [selectedTask, setSelectedTask] = useState(null);
 
-  // Form state
+  // Form state with separate hours and minutes
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -111,8 +130,9 @@ export default function AdminTaskDashboard({ user }) {
     dueDate: "",
     priority: "medium",
     tags: "",
-    estimatedHours: "",
-    status: "pending",
+    estimatedHours: 0,
+    estimatedMinutes: 0,
+    status: "pending", // 🔧 ALWAYS DEFAULT TO "pending"
   });
 
   // Users and stats
@@ -124,12 +144,86 @@ export default function AdminTaskDashboard({ user }) {
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [bulkMenuAnchor, setBulkMenuAnchor] = useState(null);
 
+  // Calculate remaining hours in today
+  const getRemainingHoursToday = () => {
+    const now = new Date();
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const remainingMs = endOfDay.getTime() - now.getTime();
+    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+    const remainingMinutes = Math.floor(
+      (remainingMs % (1000 * 60 * 60)) / (1000 * 60)
+    );
+
+    return {
+      hours: remainingHours,
+      minutes: remainingMinutes,
+      total: remainingHours + remainingMinutes / 60,
+    };
+  };
+
+  // Check if selected date is today
+  const isSelectedDateToday = () => {
+    if (!taskForm.dueDate) return false;
+    const selectedDate = new Date(taskForm.dueDate);
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  };
+
+  // Get current estimated time in hours
+  const getCurrentEstimatedHours = () => {
+    return taskForm.estimatedHours + taskForm.estimatedMinutes / 60;
+  };
+
+  // Check if estimated time exceeds remaining time
+  const exceedsRemainingTime = () => {
+    if (!isSelectedDateToday()) return false;
+    const remaining = getRemainingHoursToday();
+    const estimated = getCurrentEstimatedHours();
+    return estimated > remaining.total;
+  };
+
+  // 🔧 FIXED: Proper overdue logic - today's tasks are not overdue until after midnight
+  const isTaskOverdue = (task) => {
+    if (!task.dueDate || task.status === "completed") return false;
+
+    const dueDate = new Date(task.dueDate);
+    const now = new Date();
+
+    // Set due date to end of that day (11:59:59 PM)
+    const endOfDueDate = new Date(dueDate);
+    endOfDueDate.setHours(23, 59, 59, 999);
+
+    // Task is overdue only if current time is past the end of due date
+    return now > endOfDueDate;
+  };
+
   useEffect(() => {
     fetchTasks();
     fetchUsers();
     fetchTaskStats();
     fetchTeamStats();
   }, [page, filters, currentTab]);
+
+  // 🔧 ADD AUTO-DISMISS NOTIFICATIONS
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const fetchTasks = async () => {
     try {
@@ -142,7 +236,14 @@ export default function AdminTaskDashboard({ user }) {
 
       // Admin can see all tasks
       const { data } = await API.get(`/tasks?${params}`);
-      setTasks(data.tasks);
+
+      // 🔧 NORMALIZE STATUS IN FETCHED TASKS
+      const normalizedTasks = (data.tasks || []).map((task) => ({
+        ...task,
+        status: normalizeStatus(task.status),
+      }));
+
+      setTasks(normalizedTasks);
       setTotalPages(data.pagination.totalPages);
       setTotal(data.pagination.total);
     } catch (err) {
@@ -180,6 +281,7 @@ export default function AdminTaskDashboard({ user }) {
   };
 
   const handleCreateTask = () => {
+    // 🔧 ALWAYS SET DEFAULT STATUS TO "pending", NEVER "todo"
     setTaskForm({
       title: "",
       description: "",
@@ -187,25 +289,35 @@ export default function AdminTaskDashboard({ user }) {
       dueDate: "",
       priority: "medium",
       tags: "",
-      estimatedHours: "",
-      status: "pending",
+      estimatedHours: 0,
+      estimatedMinutes: 0,
+      status: "pending", // 🔧 EXPLICITLY SET TO "pending"
     });
     setDialogMode("create");
     setOpenDialog(true);
   };
 
   const handleEditTask = (task) => {
+    // 🔧 NORMALIZE STATUS WHEN EDITING
+    const normalizedStatus = normalizeStatus(task.status);
+
+    // 🕒 FIXED: Convert decimal hours to hours and minutes for editing
+    const totalHours = task.estimatedHours || 0;
+    const hours = Math.floor(totalHours);
+    const minutes = Math.round((totalHours - hours) * 60);
+
     setTaskForm({
       title: task.title,
       description: task.description,
-      assignedTo: task.assignedTo._id,
+      assignedTo: task.assignedTo?._id || "",
       dueDate: task.dueDate
-        ? new Date(task.dueDate).toISOString().split("T")[0]
+        ? new Date(task.dueDate).toISOString().split("T")
         : "",
       priority: task.priority,
       tags: task.tags?.join(", ") || "",
-      estimatedHours: task.estimatedHours || "",
-      status: task.status,
+      estimatedHours: hours,
+      estimatedMinutes: minutes,
+      status: normalizedStatus, // 🔧 USE NORMALIZED STATUS
     });
     setSelectedTask(task);
     setDialogMode("edit");
@@ -214,16 +326,28 @@ export default function AdminTaskDashboard({ user }) {
 
   const handleSubmitTask = async () => {
     try {
+      if (exceedsRemainingTime()) {
+        setError("Not enough time left today for this task!");
+        return;
+      }
+      // 🕒 FIXED: Convert hours and minutes to decimal hours for backend
+      const totalEstimatedHours =
+        taskForm.estimatedHours + taskForm.estimatedMinutes / 60;
+
       const formData = {
         ...taskForm,
         tags: taskForm.tags
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag),
-        estimatedHours: taskForm.estimatedHours
-          ? Number(taskForm.estimatedHours)
-          : undefined,
+        estimatedHours:
+          totalEstimatedHours > 0 ? totalEstimatedHours : undefined,
+        // 🔧 ENSURE STATUS IS ALWAYS "pending" FOR NEW TASKS
+        status: dialogMode === "create" ? "pending" : taskForm.status,
       };
+
+      // Remove the separate minutes field
+      delete formData.estimatedMinutes;
 
       if (dialogMode === "create") {
         await API.post("/tasks", formData);
@@ -277,6 +401,25 @@ export default function AdminTaskDashboard({ user }) {
     } catch (err) {
       setError("Failed to delete tasks");
     }
+  };
+
+  // Generate hour options (0-24)
+  const hourOptions = Array.from({ length: 25 }, (_, i) => i);
+
+  // Generate minute options (0, 15, 30, 45)
+  const minuteOptions = [0, 15, 30, 45];
+
+  // 🕒 CONSISTENT TIME FORMATTING FUNCTION
+  const formatEstimatedTime = (decimalHours) => {
+    if (!decimalHours || decimalHours === 0) {
+      return "0h 0m";
+    }
+
+    const totalMinutes = Math.round(decimalHours * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}h ${minutes}m`;
   };
 
   const renderOverviewTab = () => (
@@ -418,7 +561,7 @@ export default function AdminTaskDashboard({ user }) {
                         fontWeight: 600,
                       }}
                     >
-                      {member.name?.[0]}
+                      {member.name}
                     </Avatar>
                     <Typography
                       variant="h6"
@@ -552,6 +695,15 @@ export default function AdminTaskDashboard({ user }) {
                 variant="outlined"
                 startIcon={<MoreVertIcon />}
                 onClick={(e) => setBulkMenuAnchor(e.currentTarget)}
+                sx={{
+                  borderColor: "#059669",
+                  color: "#059669",
+                  fontWeight: 600,
+                  "&:hover": {
+                    borderColor: "#047857",
+                    backgroundColor: "rgba(5, 150, 105, 0.04)",
+                  },
+                }}
               >
                 Bulk Actions ({selectedTasks.length})
               </Button>
@@ -577,6 +729,16 @@ export default function AdminTaskDashboard({ user }) {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleCreateTask}
+            sx={{
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 3,
+              "&:hover": {
+                background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
+              },
+            }}
           >
             Create Task
           </Button>
@@ -604,6 +766,15 @@ export default function AdminTaskDashboard({ user }) {
                       setSelectedTasks([]);
                     }
                   }}
+                  sx={{
+                    color: "#059669",
+                    "&.Mui-checked": {
+                      color: "#059669",
+                    },
+                    "&.MuiCheckbox-indeterminate": {
+                      color: "#059669",
+                    },
+                  }}
                 />
               </TableCell>
               <TableCell>
@@ -622,117 +793,144 @@ export default function AdminTaskDashboard({ user }) {
                 <strong>Due Date</strong>
               </TableCell>
               <TableCell>
+                <strong>Estimated Time</strong>
+              </TableCell>
+              <TableCell>
                 <strong>Actions</strong>
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {tasks.map((task) => (
-              <TableRow key={task._id} hover>
-                <TableCell padding="checkbox">
-                  <Checkbox
-                    checked={selectedTasks.includes(task._id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedTasks([...selectedTasks, task._id]);
-                      } else {
-                        setSelectedTasks(
-                          selectedTasks.filter((id) => id !== task._id)
-                        );
-                      }
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {task.title}
-                    </Typography>
-                    {task.description && (
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
+            {tasks.map((task) => {
+              // 🔧 GET NORMALIZED STATUS DISPLAY
+              const statusDisplay = getStatusDisplay(task.status);
+
+              return (
+                <TableRow key={task._id} hover>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedTasks.includes(task._id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedTasks([...selectedTasks, task._id]);
+                        } else {
+                          setSelectedTasks(
+                            selectedTasks.filter((id) => id !== task._id)
+                          );
+                        }
+                      }}
+                      sx={{
+                        color: "#059669",
+                        "&.Mui-checked": {
+                          color: "#059669",
+                        },
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {task.title}
+                      </Typography>
+                      {task.description && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 0.5 }}
+                        >
+                          {task.description.substring(0, 60)}...
+                        </Typography>
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Avatar
+                        sx={{ width: 32, height: 32, fontSize: "0.875rem" }}
                       >
-                        {task.description.substring(0, 60)}...
+                        {task.assignedTo?.firstName}
+                        {task.assignedTo?.lastName}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {task.assignedTo?.firstName}{" "}
+                          {task.assignedTo?.lastName}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={task.priority}
+                      color={priorityColors[task.priority]}
+                      size="small"
+                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {/* 🔧 FIXED STATUS DISPLAY - Always shows "pending" not "todo" */}
+                    <Chip
+                      icon={statusDisplay.icon}
+                      label={statusDisplay.label}
+                      color={statusDisplay.color}
+                      size="small"
+                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {task.dueDate ? (
+                      <Box>
+                        <Typography variant="body2">
+                          {new Date(task.dueDate).toLocaleDateString()}
+                        </Typography>
+                        {new Date(task.dueDate) < new Date() &&
+                          task.status !== "completed" && (
+                            <Typography variant="caption" color="error">
+                              Overdue
+                            </Typography>
+                          )}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No due date
                       </Typography>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Avatar
-                      sx={{ width: 32, height: 32, fontSize: "0.875rem" }}
-                    >
-                      {task.assignedTo?.firstName?.[0]}
-                      {task.assignedTo?.lastName?.[0]}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {task.assignedTo?.firstName} {task.assignedTo?.lastName}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={task.priority}
-                    color={priorityColors[task.priority]}
-                    size="small"
-                    sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    icon={statusIcons[task.status]}
-                    label={task.status.replace("-", " ")}
-                    color={statusColors[task.status]}
-                    size="small"
-                    sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  {task.dueDate ? (
-                    <Box>
-                      <Typography variant="body2">
-                        {new Date(task.dueDate).toLocaleDateString()}
-                      </Typography>
-                      {new Date(task.dueDate) < new Date() &&
-                        task.status !== "completed" && (
-                          <Typography variant="caption" color="error">
-                            Overdue
-                          </Typography>
-                        )}
-                    </Box>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No due date
+                  </TableCell>
+                  <TableCell>
+                    {/* 🕒 CONSISTENT TIME FORMAT IN TABLE */}
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {formatEstimatedTime(task.estimatedHours)}
                     </Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={0.5}>
-                    <Tooltip title="Edit Task">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEditTask(task)}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Task">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteTask(task._id)}
-                        color="error"
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="Edit Task">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEditTask(task)}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete Task">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteTask(task._id)}
+                          sx={{
+                            color: "#dc2626",
+                            "&:hover": {
+                              backgroundColor: "rgba(220, 38, 38, 0.04)",
+                            },
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -750,6 +948,26 @@ export default function AdminTaskDashboard({ user }) {
       )}
     </Box>
   );
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        }}
+      >
+        <Typography variant="h6" sx={{ color: "#059669" }}>
+          Loading...
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -985,8 +1203,8 @@ export default function AdminTaskDashboard({ user }) {
                                 "linear-gradient(135deg, #059669 0%, #047857 100%)",
                             }}
                           >
-                            {userOption.firstName?.[0]}
-                            {userOption.lastName?.[0]}
+                            {userOption.firstName}
+                            {userOption.lastName}
                           </Avatar>
                           <Box>
                             <Typography
@@ -1104,6 +1322,7 @@ export default function AdminTaskDashboard({ user }) {
                           setTaskForm({ ...taskForm, status: e.target.value })
                         }
                       >
+                        {/* 🔧 FIXED STATUS OPTIONS - Only show "pending" not "todo" */}
                         <MenuItem value="pending">
                           <Chip
                             icon={<ScheduleIcon />}
@@ -1161,82 +1380,256 @@ export default function AdminTaskDashboard({ user }) {
                     }
                     margin="normal"
                     InputLabelProps={{ shrink: true }}
+                    // 🔧 ADD THIS LINE: Restrict to today and future dates only
+                    inputProps={{ min: new Date().toISOString().split("T")[0] }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         borderRadius: 2,
-                        "&:hover fieldset": {
-                          borderColor: "#059669",
-                        },
-                        "&.Mui-focused fieldset": {
-                          borderColor: "#059669",
-                        },
+                        "&:hover fieldset": { borderColor: "#059669" },
+                        "&.Mui-focused fieldset": { borderColor: "#059669" },
                       },
-                      "& .MuiInputLabel-root.Mui-focused": {
-                        color: "#059669",
-                      },
+                      "& .MuiInputLabel-root.Mui-focused": { color: "#059669" },
                     }}
                   />
                 </Grid>
                 <Grid item xs={6}>
-                  <FormControl fullWidth margin="normal">
+                  <Box sx={{ mt: 2, mb: 1 }}>
                     <Typography
-                      variant="body2"
-                      sx={{ mb: 1, fontWeight: 500, color: "rgba(0,0,0,0.6)" }}
+                      variant="subtitle2"
+                      sx={{
+                        mb: 2,
+                        color: "#374151",
+                        fontWeight: 600,
+                        fontSize: "0.875rem",
+                      }}
                     >
                       Estimated Time
                     </Typography>
 
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      {/* Hours */}
-                      <Select
-                        value={Math.floor((taskForm.estimatedHours || 0) / 60)}
-                        onChange={(e) => {
-                          const hours = parseInt(e.target.value, 10);
-                          const minutes = (taskForm.estimatedHours || 0) % 60;
-                          const total = hours * 60 + minutes;
-                          if (total <= 24 * 60) {
-                            setTaskForm({ ...taskForm, estimatedHours: total });
-                          }
+                    {/* 🔧 NEW: Show remaining time warning for today */}
+                    {/* 🔧 UPDATED: Better warning message */}
+                    {isSelectedDateToday() && (
+                      <Box
+                        sx={{
+                          mb: 2,
+                          p: 2,
+                          backgroundColor: "#fef3c7",
+                          borderRadius: 1,
+                          border: "1px solid #f59e0b",
                         }}
-                        sx={{ flex: 1 }}
                       >
-                        {[...Array(25).keys()].map((h) => (
-                          <MenuItem key={h} value={h}>
-                            {String(h).padStart(2, "0")}
-                          </MenuItem>
-                        ))}
-                      </Select>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#92400e",
+                            fontWeight: 600,
+                            display: "block",
+                          }}
+                        >
+                          ⏰ Task due today: {getRemainingHoursToday().hours}h{" "}
+                          {getRemainingHoursToday().minutes}m left until
+                          midnight
+                        </Typography>
+                      </Box>
+                    )}
 
-                      {/* Minutes */}
-                      <Select
-                        value={(taskForm.estimatedHours || 0) % 60}
-                        onChange={(e) => {
-                          const minutes = parseInt(e.target.value, 10);
-                          const hours = Math.floor(
-                            (taskForm.estimatedHours || 0) / 60
-                          );
-                          const total = hours * 60 + minutes;
-                          if (total <= 24 * 60) {
-                            setTaskForm({ ...taskForm, estimatedHours: total });
-                          }
+                    {/* 🔧 NEW: Show error if exceeds remaining time */}
+                    {exceedsRemainingTime() && (
+                      <Box
+                        sx={{
+                          mb: 2,
+                          p: 2,
+                          backgroundColor: "#fef2f2",
+                          borderRadius: 1,
+                          border: "1px solid #ef4444",
                         }}
-                        sx={{ flex: 1 }}
                       >
-                        {[...Array(60).keys()].map((m) => (
-                          <MenuItem key={m} value={m}>
-                            {String(m).padStart(2, "0")}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Box>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#dc2626",
+                            fontWeight: 600,
+                            display: "block",
+                          }}
+                        >
+                          ❌ Not enough time left today! Maximum:{" "}
+                          {Math.floor(getRemainingHoursToday().total)}h{" "}
+                          {Math.round(
+                            (getRemainingHoursToday().total % 1) * 60
+                          )}
+                          m
+                        </Typography>
+                      </Box>
+                    )}
 
-                    <Typography
-                      variant="caption"
-                      sx={{ mt: 1, color: "text.secondary" }}
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        backgroundColor: "#f8fafc",
+                        border: exceedsRemainingTime()
+                          ? "2px solid #ef4444"
+                          : "2px solid #e2e8f0",
+                        "&:hover": {
+                          borderColor: exceedsRemainingTime()
+                            ? "#ef4444"
+                            : "#059669",
+                        },
+                      }}
                     >
-                      Format: hh:mm (max 24:00)
-                    </Typography>
-                  </FormControl>
+                      <Grid container spacing={2} alignItems="center">
+                        <Grid item xs={5}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel
+                              sx={{ color: "#059669", fontSize: "0.75rem" }}
+                            >
+                              HOURS
+                            </InputLabel>
+                            <Select
+                              value={taskForm.estimatedHours}
+                              label="HOURS"
+                              onChange={(e) => {
+                                const newHours = e.target.value;
+                                const newTotal =
+                                  newHours + taskForm.estimatedMinutes / 60;
+
+                                // 🔧 NEW: Validate against remaining time if today
+                                if (
+                                  isSelectedDateToday() &&
+                                  newTotal > getRemainingHoursToday().total
+                                ) {
+                                  return; // Don't update if it would exceed remaining time
+                                }
+
+                                setTaskForm({
+                                  ...taskForm,
+                                  estimatedHours: newHours,
+                                });
+                              }}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: 1,
+                                "& .MuiSelect-select": {
+                                  textAlign: "center",
+                                  fontWeight: 600,
+                                  fontSize: "1rem",
+                                },
+                              }}
+                            >
+                              {hourOptions.map((hour) => {
+                                // 🔧 NEW: Disable hours that would exceed remaining time
+                                const wouldExceed =
+                                  isSelectedDateToday() &&
+                                  hour + taskForm.estimatedMinutes / 60 >
+                                    getRemainingHoursToday().total;
+
+                                return (
+                                  <MenuItem
+                                    key={hour}
+                                    value={hour}
+                                    disabled={wouldExceed}
+                                    sx={wouldExceed ? { opacity: 0.3 } : {}}
+                                  >
+                                    {hour.toString().padStart(2, "0")}
+                                  </MenuItem>
+                                );
+                              })}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+
+                        <Grid item xs={2} sx={{ textAlign: "center" }}>
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              color: "#059669",
+                              fontWeight: 700,
+                              fontSize: "1.5rem",
+                            }}
+                          >
+                            :
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={5}>
+                          <FormControl fullWidth size="small">
+                            <InputLabel
+                              sx={{ color: "#059669", fontSize: "0.75rem" }}
+                            >
+                              MINUTES
+                            </InputLabel>
+                            <Select
+                              value={taskForm.estimatedMinutes}
+                              label="MINUTES"
+                              onChange={(e) => {
+                                const newMinutes = e.target.value;
+                                const newTotal =
+                                  taskForm.estimatedHours + newMinutes / 60;
+
+                                // 🔧 NEW: Validate against remaining time if today
+                                if (
+                                  isSelectedDateToday() &&
+                                  newTotal > getRemainingHoursToday().total
+                                ) {
+                                  return; // Don't update if it would exceed remaining time
+                                }
+
+                                setTaskForm({
+                                  ...taskForm,
+                                  estimatedMinutes: newMinutes,
+                                });
+                              }}
+                              sx={{
+                                backgroundColor: "#ffffff",
+                                borderRadius: 1,
+                                "& .MuiSelect-select": {
+                                  textAlign: "center",
+                                  fontWeight: 600,
+                                  fontSize: "1rem",
+                                },
+                              }}
+                            >
+                              {minuteOptions.map((minute) => {
+                                // 🔧 NEW: Disable minutes that would exceed remaining time
+                                const wouldExceed =
+                                  isSelectedDateToday() &&
+                                  taskForm.estimatedHours + minute / 60 >
+                                    getRemainingHoursToday().total;
+
+                                return (
+                                  <MenuItem
+                                    key={minute}
+                                    value={minute}
+                                    disabled={wouldExceed}
+                                    sx={wouldExceed ? { opacity: 0.3 } : {}}
+                                  >
+                                    {minute.toString().padStart(2, "0")}
+                                  </MenuItem>
+                                );
+                              })}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      </Grid>
+
+                      <Box sx={{ mt: 1, textAlign: "center" }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#f59e0b",
+                            fontWeight: 500,
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          💡{" "}
+                          {isSelectedDateToday()
+                            ? "Limited by remaining time today"
+                            : "Select hours and minutes (max 24:00)"}
+                        </Typography>
+                      </Box>
+                    </Paper>
+                  </Box>
                 </Grid>
               </Grid>
               <TextField
