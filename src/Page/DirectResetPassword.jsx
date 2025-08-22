@@ -1,39 +1,62 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress } from "@mui/material"
-import API from "../api"
 import { useNavigate } from "react-router-dom"
+import API from "../api"
 
-export default function Register() {
-  const navigate = useNavigate()
-  const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    userName: "",
-    email: "",
-    password: "",
-    age: "",
-  })
-  const [error, setError] = useState("")
+export default function DirectResetPassword() {
+  const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const [email, setEmail] = useState("")
+  const navigate = useNavigate()
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  useEffect(() => {
+    const resetEmail = localStorage.getItem("resetEmail")
+    if (!resetEmail) {
+      navigate("/forgot-password")
+      return
+    }
+    setEmail(resetEmail)
+  }, [navigate])
 
-  const handleSubmit = async (e) => {
+  const handleReset = async (e) => {
     e.preventDefault()
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long")
+      return
+    }
+
     setLoading(true)
     setError("")
 
     try {
-      await API.post("/users/v2/register", form)
-      localStorage.setItem("verificationEmail", form.email)
-      navigate("/email-verification")
+      // Send reset password request with email and new password
+      await API.post("/reset-password", {
+        email: email,
+        newPassword: password,
+      })
+
+      alert("Password reset successful! A confirmation email has been sent.")
+      localStorage.removeItem("resetEmail")
+      navigate("/login")
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed")
+      setError(err.response?.data?.message || "Failed to reset password")
     } finally {
       setLoading(false)
     }
+  }
+
+  if (!email) {
+    return null
   }
 
   return (
@@ -45,7 +68,6 @@ export default function Register() {
         justifyContent: "center",
         alignItems: "center",
         background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
-        py: 2,
       }}
     >
       <Paper
@@ -56,8 +78,6 @@ export default function Register() {
           textAlign: "center",
           maxWidth: 420,
           width: "100%",
-          maxHeight: "90vh",
-          overflow: "auto",
           backgroundColor: "#ffffff",
           boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
@@ -75,7 +95,7 @@ export default function Register() {
               backgroundColor: "rgba(5, 150, 105, 0.04)",
             },
           }}
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/forgot-password")}
         >
           ← Back
         </Button>
@@ -91,7 +111,7 @@ export default function Register() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          Create Account
+          Reset Password
         </Typography>
 
         <Typography
@@ -102,7 +122,7 @@ export default function Register() {
             fontSize: "0.95rem",
           }}
         >
-          Join us to manage your tasks efficiently
+          Enter your new password for <strong style={{ color: "#059669" }}>{email}</strong>
         </Typography>
 
         {error && (
@@ -113,53 +133,71 @@ export default function Register() {
               borderRadius: 2,
               backgroundColor: "#fef2f2",
               border: "1px solid #fecaca",
-              "& .MuiAlert-icon": {
-                color: "#dc2626",
-              },
             }}
           >
             {error}
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit}>
-          {Object.keys(form).map((key) => (
-            <TextField
-              key={key}
-              label={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1")}
-              name={key}
-              type={key === "password" ? "password" : key === "age" ? "number" : "text"}
-              value={form[key]}
-              fullWidth
-              margin="normal"
-              onChange={handleChange}
-              required
-              sx={{
-                mb: 2,
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  backgroundColor: "#f9fafb",
-                  "&:hover fieldset": {
-                    borderColor: "#059669",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#059669",
-                    borderWidth: 2,
-                  },
+        <form onSubmit={handleReset}>
+          <TextField
+            label="New Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            fullWidth
+            margin="normal"
+            required
+            sx={{
+              mb: 2,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                backgroundColor: "#f9fafb",
+                "&:hover fieldset": {
+                  borderColor: "#059669",
                 },
-                "& .MuiInputLabel-root.Mui-focused": {
-                  color: "#059669",
+                "&.Mui-focused fieldset": {
+                  borderColor: "#059669",
+                  borderWidth: 2,
                 },
-              }}
-            />
-          ))}
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#059669",
+              },
+            }}
+          />
+          <TextField
+            label="Confirm Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            fullWidth
+            margin="normal"
+            required
+            sx={{
+              mb: 3,
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                backgroundColor: "#f9fafb",
+                "&:hover fieldset": {
+                  borderColor: "#059669",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "#059669",
+                  borderWidth: 2,
+                },
+              },
+              "& .MuiInputLabel-root.Mui-focused": {
+                color: "#059669",
+              },
+            }}
+          />
 
           <Button
             type="submit"
             variant="contained"
             fullWidth
             sx={{
-              mt: 3,
               py: 1.5,
               borderRadius: 2,
               background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
@@ -180,36 +218,9 @@ export default function Register() {
             }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Create Account"}
+            {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Reset Password & Send Email"}
           </Button>
         </form>
-
-        <Typography
-          variant="body2"
-          sx={{
-            mt: 3,
-            color: "#6b7280",
-          }}
-        >
-          Already have an account?{" "}
-          <Button
-            variant="text"
-            onClick={() => navigate("/login")}
-            sx={{
-              color: "#059669",
-              textTransform: "none",
-              fontWeight: 600,
-              p: 0,
-              minWidth: "auto",
-              "&:hover": {
-                backgroundColor: "transparent",
-                color: "#047857",
-              },
-            }}
-          >
-            Sign in
-          </Button>
-        </Typography>
       </Paper>
     </Box>
   )
