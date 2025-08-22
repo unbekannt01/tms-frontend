@@ -22,7 +22,6 @@ import ManagerTaskDashboard from "./Page/TaskDashboards/ManagerTaskDashboard"
 import UserTaskDashboard from "./Page/TaskDashboards/UserTaskDashboard"
 import { handleAppFocus } from "./utils/SessionManager"
 import UserManagement from "./Page/UserManagement"
-import DirectResetPassword from "./Page/DirectResetPassword"
 
 // Role-based Task Router
 const TaskRouter = () => {
