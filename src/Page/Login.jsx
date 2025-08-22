@@ -1,72 +1,124 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress, Link, Container } from "@mui/material"
-import API from "../api"
-import { useNavigate, useLocation } from "react-router-dom"
-import { startSessionMonitoring } from "../utils/SessionManager"
+import { useState, useEffect } from "react";
+import {
+  Box,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+  Link,
+  Container,
+  Collapse,
+} from "@mui/material";
+import API from "../api";
+import { useNavigate, useLocation } from "react-router-dom";
+import { startSessionMonitoring } from "../utils/SessionManager";
 
 export default function Login() {
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({
     emailOrUserName: "",
     password: "",
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("")
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState("");
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search)
+    const urlParams = new URLSearchParams(location.search);
     if (urlParams.get("reason") === "session_expired") {
-      setSessionExpiredMessage("Your session has expired. Please login again.")
+      setSessionExpiredMessage("Your session has expired. Please login again.");
     }
-  }, [location])
+  }, [location]);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    setSessionExpiredMessage("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSessionExpiredMessage("");
+    setShowVerification(false);
+    setResendMessage("");
 
     try {
-      const { data } = await API.post("/users/login", form)
+      const { data } = await API.post("/users/login", form);
 
-      localStorage.setItem("sessionId", data.sessionId)
-      localStorage.setItem("accessToken", data.accessToken)
-      localStorage.setItem("user", JSON.stringify(data.user))
-      localStorage.setItem("loginTime", Date.now().toString())
+      localStorage.setItem("sessionId", data.sessionId);
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("loginTime", Date.now().toString());
 
       if (data.tokenExpiresAt) {
-        localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt)
+        localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt);
       }
 
-      startSessionMonitoring()
+      startSessionMonitoring();
 
-      const userRole = data.user.roleId.name
+      const userRole = data.user.roleId.name;
       if (userRole === "admin") {
-        navigate("/admin-dashboard")
+        navigate("/admin-dashboard");
       } else if (userRole === "manager") {
-        navigate("/manager-dashboard")
+        navigate("/manager-dashboard");
       } else {
-        navigate("/dashboard")
+        navigate("/dashboard");
       }
     } catch (err) {
-      if (err.response?.status === 401 && err.response?.data?.code === "SESSION_LIMIT_EXCEEDED") {
-        setError("Maximum session limit reached. Your oldest session has been logged out.")
+      if (
+        err.response?.status === 401 &&
+        err.response?.data?.code === "SESSION_LIMIT_EXCEEDED"
+      ) {
+        setError(
+          "Maximum session limit reached. Your oldest session has been logged out."
+        );
         setTimeout(() => {
-          window.location.reload()
-        }, 2000)
+          window.location.reload();
+        }, 2000);
+      } else if (
+        err.response?.status === 403 &&
+        err.response?.data?.needsVerification
+      ) {
+        setError(
+          "Your account is not verified yet. Please verify your email to continue."
+        );
+        setVerificationEmail(err.response.data.email);
+        setShowVerification(true);
       } else {
-        setError(err.response?.data?.message || "Login failed")
+        setError(err.response?.data?.message || "Login failed");
       }
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
+  const handleResendVerification = async () => {
+    setResendLoading(true);
+    setResendMessage("");
+
+    try {
+      await API.post("/resend-email-verification", {
+        email: verificationEmail,
+      });
+      setResendMessage(
+        "Verification email sent successfully! Please check your inbox."
+      );
+    } catch (err) {
+      setResendMessage(
+        err.response?.data?.message || "Failed to send verification email"
+      );
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   return (
     <Box
@@ -100,7 +152,8 @@ export default function Login() {
               borderRadius: 3,
               background: "#ffffff",
               border: "1px solid #e2e8f0",
-              boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+              boxShadow:
+                "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
             }}
           >
             <Box sx={{ textAlign: "center", mb: 4 }}>
@@ -151,6 +204,60 @@ export default function Login() {
                 {error}
               </Alert>
             )}
+
+            <Collapse in={showVerification}>
+              <Paper
+                sx={{
+                  p: 3,
+                  mb: 3,
+                  backgroundColor: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{ mb: 2, color: "#92400e", fontWeight: 600 }}
+                >
+                  Verify Your Account
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, color: "#92400e" }}>
+                  We'll send a verification email to:{" "}
+                  <strong>{verificationEmail}</strong>
+                </Typography>
+
+                {resendMessage && (
+                  <Alert
+                    severity={
+                      resendMessage.includes("successfully")
+                        ? "success"
+                        : "error"
+                    }
+                    sx={{ mb: 2, borderRadius: 1 }}
+                  >
+                    {resendMessage}
+                  </Alert>
+                )}
+
+                <Button
+                  onClick={handleResendVerification}
+                  disabled={resendLoading}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#f59e0b",
+                    "&:hover": { backgroundColor: "#d97706" },
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  {resendLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    "Send Verification Email"
+                  )}
+                </Button>
+              </Paper>
+            </Collapse>
 
             <form onSubmit={handleSubmit}>
               <TextField
@@ -214,14 +321,16 @@ export default function Login() {
                 sx={{
                   py: 1.5,
                   borderRadius: 2,
-                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  background:
+                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
                   boxShadow: "0 4px 6px -1px rgb(5 150 105 / 0.3)",
                   textTransform: "none",
                   fontSize: "1.1rem",
                   fontWeight: 600,
                   mb: 3,
                   "&:hover": {
-                    background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                    background:
+                      "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                     boxShadow: "0 6px 8px -1px rgb(5 150 105 / 0.4)",
                   },
                   "&:disabled": {
@@ -230,7 +339,11 @@ export default function Login() {
                   },
                 }}
               >
-                {loading ? <CircularProgress size={24} color="inherit" /> : "Sign In"}
+                {loading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
@@ -253,5 +366,5 @@ export default function Login() {
         </Box>
       </Container>
     </Box>
-  )
+  );
 }
