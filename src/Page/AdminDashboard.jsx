@@ -23,11 +23,14 @@ import {
 import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
+import { NotificationBell } from "../components/NotificationBell"
+import { LoginNotificationPopup } from "../components/LoginNotificationPopup"
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loginNotifications, setLoginNotifications] = useState(null)
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -51,6 +54,18 @@ export default function AdminDashboard() {
       }
 
       setUser(parsedUser)
+
+      const storedLoginNotifications = localStorage.getItem("loginNotifications")
+      if (storedLoginNotifications) {
+        try {
+          const notifications = JSON.parse(storedLoginNotifications)
+          setLoginNotifications(notifications)
+          localStorage.removeItem("loginNotifications")
+        } catch (error) {
+          console.error("[v0] Error parsing login notifications:", error)
+        }
+      }
+
       startSessionMonitoring()
     } catch (error) {
       localStorage.clear()
@@ -105,12 +120,14 @@ export default function AdminDashboard() {
         py: 4,
       }}
     >
+      <LoginNotificationPopup loginNotifications={loginNotifications} onClose={() => setLoginNotifications(null)} />
+
       <Container maxWidth="lg">
         <Box className="fade-in">
           <Box sx={{ mb: 6 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
               <AdminIcon sx={{ fontSize: 40, color: "#dc2626" }} />
-              <Box>
+              <Box sx={{ flex: 1 }}>
                 <Typography
                   variant="h3"
                   sx={{
@@ -141,6 +158,7 @@ export default function AdminDashboard() {
                   </Typography>
                 </Box>
               </Box>
+              <NotificationBell />
             </Box>
           </Box>
 

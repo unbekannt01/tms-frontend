@@ -6,11 +6,14 @@ import { Box, Paper, Typography, Button, CircularProgress, Chip, Card, CardConte
 import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
+import { NotificationBell } from "../components/NotificationBell"
+import { LoginNotificationPopup } from "../components/LoginNotificationPopup"
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loginNotifications, setLoginNotifications] = useState(null)
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -34,7 +37,17 @@ export default function Dashboard() {
 
       setUser(parsedUser)
 
-      // Start session monitoring
+      const storedLoginNotifications = localStorage.getItem("loginNotifications")
+      if (storedLoginNotifications) {
+        try {
+          const notifications = JSON.parse(storedLoginNotifications)
+          setLoginNotifications(notifications)
+          localStorage.removeItem("loginNotifications")
+        } catch (error) {
+          console.error("[v0] Error parsing login notifications:", error)
+        }
+      }
+
       startSessionMonitoring()
     } catch (error) {
       localStorage.clear()
@@ -96,6 +109,8 @@ export default function Dashboard() {
         px: 2,
       }}
     >
+      <LoginNotificationPopup loginNotifications={loginNotifications} onClose={() => setLoginNotifications(null)} />
+
       <Box
         sx={{
           maxWidth: 800,
@@ -123,15 +138,18 @@ export default function Dashboard() {
             >
               Welcome back, {user.firstName}!
             </Typography>
-            <Chip
-              label={user.roleId?.displayName || "Regular User"}
-              sx={{
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-                color: "#ffffff",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-              }}
-            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <NotificationBell />
+              <Chip
+                label={user.roleId?.displayName || "Regular User"}
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                }}
+              />
+            </Box>
           </Box>
           <Typography
             variant="body1"
