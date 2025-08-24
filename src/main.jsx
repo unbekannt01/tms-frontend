@@ -3,14 +3,14 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 
-const root = document.getElementById("root");
-
 // Maintenance flag
 const maintenanceMode = import.meta.env.VITE_MAINTENANCE_MODE === "true";
 
 // Check API URL
 const apiUrl = import.meta.env.VITE_API_URL;
 const isDevMode = apiUrl.includes("localhost");
+
+const root = document.getElementById("root");
 
 if (maintenanceMode) {
   root.innerHTML = `
@@ -62,3 +62,11 @@ if (maintenanceMode) {
     </StrictMode>
   );
 }
+
+// ✅ PWA Service Worker Registration
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({
+  onNeedRefresh() {},
+  onOfflineReady() {},
+});
