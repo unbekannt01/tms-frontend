@@ -26,7 +26,7 @@ import ManagerTaskDashboard from "./Page/TaskDashboards/ManagerTaskDashboard";
 import UserTaskDashboard from "./Page/TaskDashboards/UserTaskDashboard";
 import { handleAppFocus } from "./utils/SessionManager";
 import UserManagement from "./Page/UserManagement";
-import ThankYou from "./Page/Thankyou";
+import ThankYou from "./Page/ThankYou";
 
 // Role-based Task Router
 const TaskRouter = () => {
