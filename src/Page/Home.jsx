@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -39,8 +37,13 @@ export default function Home() {
       startSessionMonitoring();
       navigate("/dashboard");
     } else {
-      // Show funny dialog if not authenticated
-      setOpenDialog(true);
+      // ✅ Check if popup has already been shown in this session
+      const hasShownPopup = sessionStorage.getItem("hasShownPopup");
+
+      if (!hasShownPopup) {
+        setOpenDialog(true);
+        sessionStorage.setItem("hasShownPopup", "true");
+      }
     }
   }, [navigate]);
 
@@ -174,23 +177,131 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* Funny Dialog */}
-      <Dialog open={openDialog} onClose={handleClose}>
-        <DialogTitle>Uh-oh! 😴</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Looks like our server decided to take a coffee break ☕ (probably
-            sleeping under the desk). If you really need access, just poke us by
-            sending an email to{" "}
-            <Box component="span" sx={{ fontWeight: "bold", color: "#059669" }}>
-              testing.buddy1111@gmail.com
-            </Box>{" "}
-            and we’ll wake it up with extra-strong espresso! 🚀
+      {/* ✅ Popup only shows once per session */}
+      <Dialog
+        open={openDialog}
+        onClose={handleClose}
+        PaperProps={{
+          sx: {
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+            p: 2,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            textAlign: "center",
+            fontFamily: "Manrope, sans-serif",
+            fontWeight: 700,
+            fontSize: "1.8rem",
+            background: "linear-gradient(135deg, #059669, #10b981)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+          }}
+        >
+          🚀 Oops! Server on Coffee Break ☕
+        </DialogTitle>
+
+        <DialogContent sx={{ mt: 1 }}>
+          <Typography
+            sx={{
+              mb: 3,
+              color: "#475569",
+              textAlign: "center",
+              fontSize: "1rem",
+              lineHeight: 1.6,
+            }}
+          >
+            Looks like our server is taking a quick nap 💤. Leave your message
+            below, and we’ll wake it up with some extra espresso! ⚡
           </Typography>
+
+          <form
+            action="https://formsubmit.co/testing.buddy1111@gmail.com"
+            method="POST"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "14px",
+            }}
+          >
+            <input
+              type="text"
+              name="name"
+              placeholder="Your Name"
+              required
+              style={{
+                padding: "12px 14px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "12px",
+                fontSize: "1rem",
+                outline: "none",
+                transition: "0.2s",
+              }}
+              onFocus={(e) => (e.target.style.border = "1px solid #10b981")}
+              onBlur={(e) => (e.target.style.border = "1px solid #e2e8f0")}
+            />
+
+            <textarea
+              name="message"
+              placeholder="Your Message"
+              required
+              style={{
+                padding: "12px 14px",
+                border: "1px solid #e2e8f0",
+                borderRadius: "12px",
+                minHeight: "90px",
+                fontSize: "1rem",
+                outline: "none",
+                transition: "0.2s",
+              }}
+              onFocus={(e) => (e.target.style.border = "1px solid #10b981")}
+              onBlur={(e) => (e.target.style.border = "1px solid #e2e8f0")}
+            />
+
+            <input type="hidden" name="_captcha" value="false" />
+            <input
+              type="hidden"
+              name="_next"
+              value={`${window.location.origin}/thank-you`}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                mt: 1,
+                py: 1.5,
+                borderRadius: "12px",
+                fontWeight: 600,
+                textTransform: "none",
+                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                boxShadow: "0 4px 10px rgba(16,185,129,0.4)",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #047857, #065f46)",
+                  boxShadow: "0 6px 14px rgba(5,150,105,0.5)",
+                },
+              }}
+            >
+              Send Message ✉️
+            </Button>
+          </form>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} color="primary">
-            Haha, okay!
+
+        <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+          <Button
+            onClick={handleClose}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 600,
+              color: "#475569",
+              "&:hover": { backgroundColor: "#f1f5f9" },
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>
