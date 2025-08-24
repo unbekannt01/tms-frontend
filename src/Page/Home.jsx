@@ -20,7 +20,7 @@ export default function Home() {
   const [notice, setNotice] = useState(""); // ✅ state for announcement
 
   useEffect(() => {
-    fetch("/config.json")
+    fetch(`/config.json?ts=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => setNotice(data.notice))
       .catch(() => {});
@@ -72,7 +72,6 @@ export default function Home() {
     >
       <Container maxWidth="sm">
         <Box className="fade-in" sx={{ textAlign: "center" }}>
-
           {/* ✅ Dynamic Notice Banner */}
           {notice && (
             <Paper
@@ -223,7 +222,7 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* ✅ Popup dialog (unchanged) */}
+      {/* ✅ Popup dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -334,6 +333,30 @@ export default function Home() {
               Send Message ✉️
             </Button>
           </form>
+
+          {/* ✅ Funny fallback note */}
+          <Typography
+            sx={{
+              mt: 3,
+              color: "#64748b",
+              fontSize: "0.9rem",
+              textAlign: "center",
+              fontStyle: "italic",
+            }}
+          >
+            Not a fan of forms? 📝 No worries — just shoot us an email at{" "}
+            <a
+              href="mailto:testing.buddy1111@gmail.com"
+              style={{
+                fontWeight: 600,
+                color: "#059669",
+                textDecoration: "none",
+              }}
+            >
+              testing.buddy1111@gmail.com
+            </a>{" "}
+            📬 (we promise we check it between coffee breaks ☕).
+          </Typography>
         </DialogContent>
 
         <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
