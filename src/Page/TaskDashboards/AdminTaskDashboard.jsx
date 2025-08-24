@@ -206,24 +206,24 @@ export default function AdminTaskDashboard({ user }) {
     fetchTeamStats();
   }, [page, filters, currentTab]);
 
-  // 🔧 ADD AUTO-DISMISS NOTIFICATIONS
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
+  // // 🔧 ADD AUTO-DISMISS NOTIFICATIONS
+  // useEffect(() => {
+  //   if (success) {
+  //     const timer = setTimeout(() => {
+  //       setSuccess("");
+  //     }, 3000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [success]);
 
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => {
-        setError("");
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
+  // useEffect(() => {
+  //   if (error) {
+  //     const timer = setTimeout(() => {
+  //       setError("");
+  //     }, 3000);
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [error]);
 
   const fetchTasks = async () => {
     try {

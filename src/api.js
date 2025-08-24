@@ -1,11 +1,11 @@
 import axios from "axios"
 
 const API = axios.create({
-  baseURL: "https://nodejs-migration.onrender.com/api",
+  baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-})
+});
 
 // Attach both sessionId and JWT token if they exist
 API.interceptors.request.use((req) => {
