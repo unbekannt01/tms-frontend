@@ -1,7 +1,7 @@
 import axios from "axios"
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: "https://nodejs-migration.onrender.com/api",
   headers: {
     "Content-Type": "application/json",
   },
