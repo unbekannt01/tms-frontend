@@ -10,7 +10,7 @@ export default defineConfig({
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
         name: "TMS",
-        short_name: "MyApp",
+        short_name: "TMS",
         description: "My awesome Vite React PWA!",
         theme_color: "#ffffff",
         background_color: "#ffffff",
