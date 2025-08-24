@@ -17,8 +17,15 @@ export default function Home() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [notice, setNotice] = useState(""); // ✅ state for announcement
 
   useEffect(() => {
+    fetch("/config.json")
+      .then((res) => res.json())
+      .then((data) => setNotice(data.notice))
+      .catch(() => {});
+
+    // 🔹 Session check
     const user = localStorage.getItem("user");
     const sessionId = localStorage.getItem("sessionId");
     const accessToken = localStorage.getItem("accessToken");
@@ -65,6 +72,29 @@ export default function Home() {
     >
       <Container maxWidth="sm">
         <Box className="fade-in" sx={{ textAlign: "center" }}>
+
+          {/* ✅ Dynamic Notice Banner */}
+          {notice && (
+            <Paper
+              elevation={2}
+              sx={{
+                mb: 4,
+                p: 2,
+                borderRadius: 2,
+                backgroundColor: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                textAlign: "center",
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600, color: "#047857" }}
+              >
+                {notice}
+              </Typography>
+            </Paper>
+          )}
+
           <Box sx={{ mb: 6 }}>
             <Typography
               variant="h2"
