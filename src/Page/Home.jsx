@@ -37,9 +37,8 @@ export default function Home() {
       startSessionMonitoring();
       navigate("/dashboard");
     } else {
-      // ✅ Check if popup has already been shown in this session
+      // ✅ Auto-popup only once per session
       const hasShownPopup = sessionStorage.getItem("hasShownPopup");
-
       if (!hasShownPopup) {
         setOpenDialog(true);
         sessionStorage.setItem("hasShownPopup", "true");
@@ -52,6 +51,7 @@ export default function Home() {
   }
 
   const handleClose = () => setOpenDialog(false);
+  const handleOpen = () => setOpenDialog(true); // ✅ allow manual open
 
   return (
     <Box
@@ -173,11 +173,27 @@ export default function Home() {
                 Create Account
               </Button>
             </Box>
+
+            {/* ✅ Extra manual open button */}
+            <Button
+              variant="text"
+              size="small"
+              onClick={handleOpen}
+              sx={{
+                mt: 3,
+                textTransform: "none",
+                fontSize: "0.9rem",
+                color: "#64748b",
+                "&:hover": { color: "#059669" },
+              }}
+            >
+              Having issues? Click here to send us a message
+            </Button>
           </Paper>
         </Box>
       </Container>
 
-      {/* ✅ Popup only shows once per session */}
+      {/* ✅ Popup dialog (unchanged) */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
