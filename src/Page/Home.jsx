@@ -43,14 +43,8 @@ export default function Home() {
       setIsAuthenticated(true);
       startSessionMonitoring();
       navigate("/dashboard");
-    } else {
-      // ✅ Auto-popup only once per session
-      const hasShownPopup = sessionStorage.getItem("hasShownPopup");
-      if (!hasShownPopup) {
-        setOpenDialog(true);
-        sessionStorage.setItem("hasShownPopup", "true");
-      }
     }
+    // ❌ Removed auto-popup logic - no longer shows popup automatically
   }, [navigate]);
 
   if (isAuthenticated) {
@@ -58,7 +52,7 @@ export default function Home() {
   }
 
   const handleClose = () => setOpenDialog(false);
-  const handleOpen = () => setOpenDialog(true); // ✅ allow manual open
+  const handleOpen = () => setOpenDialog(true); // ✅ allow manual open only
 
   return (
     <Box
@@ -203,7 +197,7 @@ export default function Home() {
               </Button>
             </Box>
 
-            {/* ✅ Extra manual open button */}
+            {/* ✅ Manual open button - only way to show popup */}
             <Button
               variant="text"
               size="small"
@@ -222,7 +216,7 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* ✅ Popup dialog */}
+      {/* ✅ Popup dialog - now only opens manually */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -246,7 +240,7 @@ export default function Home() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          🚀 Oops! Server on Coffee Break ☕
+          ⚡ Server's Caffeinated & Running Strong! ☕
         </DialogTitle>
 
         <DialogContent sx={{ mt: 1 }}>
@@ -259,8 +253,8 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            Looks like our server is taking a quick nap 💤. Leave your message
-            below, and we’ll wake it up with some extra espresso! ⚡
+            Great news! Our servers are fully powered up and running smoothly for the next 25 days! ✨ 
+            But hey, if you need to reach out or just want to say hi, drop us a message below! 💌
           </Typography>
 
           <form
@@ -330,11 +324,11 @@ export default function Home() {
                 },
               }}
             >
-              Send Message ✉️
+              Send Your Message 🚀
             </Button>
           </form>
 
-          {/* ✅ Funny fallback note */}
+          {/* ✅ Updated note with coffee break backup */}
           <Typography
             sx={{
               mt: 3,
@@ -344,7 +338,7 @@ export default function Home() {
               fontStyle: "italic",
             }}
           >
-            Not a fan of forms? 📝 No worries — just shoot us an email at{" "}
+            Prefer direct contact? 📧 Email us at{" "}
             <a
               href="mailto:testing.buddy1111@gmail.com"
               style={{
@@ -355,7 +349,7 @@ export default function Home() {
             >
               testing.buddy1111@gmail.com
             </a>{" "}
-            📬 (we promise we check it between coffee breaks ☕).
+            📮 (Even when our servers take coffee breaks, we're always listening! ☕)
           </Typography>
         </DialogContent>
 
