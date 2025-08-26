@@ -253,8 +253,9 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            Great news! Our servers are fully powered up and running smoothly for the next 25 days! ✨ 
-            But hey, if you need to reach out or just want to say hi, drop us a message below! 💌
+            ✨ Great news! Our servers are fully powered up and running smoothly
+            till 19th September 2025! 🚀 But hey, if you need to reach out or
+            just want to say hi, drop us a message below! 💌
           </Typography>
 
           <form
@@ -349,7 +350,8 @@ export default function Home() {
             >
               testing.buddy1111@gmail.com
             </a>{" "}
-            📮 (Even when our servers take coffee breaks, we're always listening! ☕)
+            📮 (Even when our servers take coffee breaks, we're always
+            listening! ☕)
           </Typography>
         </DialogContent>
 
