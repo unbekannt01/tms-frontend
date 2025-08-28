@@ -24,7 +24,7 @@ import Profile from "./Page/Profile";
 import AdminTaskDashboard from "./Page/TaskDashboards/AdminTaskDashboard";
 import ManagerTaskDashboard from "./Page/TaskDashboards/ManagerTaskDashboard";
 import UserTaskDashboard from "./Page/TaskDashboards/UserTaskDashboard";
-import { handleAppFocus, validateSessionNow } from "./utils/SessionManager";
+import { handleAppFocus, validateSessionNow, validateIfStale } from "./utils/SessionManager";
 import UserManagement from "./Page/UserManagement";
 import ThankYou from "./Page/ThankYou";
 
@@ -90,6 +90,11 @@ export default function App() {
       handleAppFocus();
     };
 
+    // Activity-driven lightweight validation
+    const handleActivity = () => {
+      validateIfStale(15000);
+    };
+
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         handleAppFocus();
@@ -97,10 +102,16 @@ export default function App() {
     };
 
     window.addEventListener("focus", handleFocus);
+    window.addEventListener("click", handleActivity, { passive: true });
+    window.addEventListener("keydown", handleActivity, { passive: true });
+    window.addEventListener("touchstart", handleActivity, { passive: true });
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("click", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      window.removeEventListener("touchstart", handleActivity);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);

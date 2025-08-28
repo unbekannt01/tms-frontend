@@ -1,4 +1,5 @@
 import axios from "axios"
+import { validateIfStale } from "./utils/SessionManager"
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -9,6 +10,9 @@ const API = axios.create({
 
 // Attach both sessionId and JWT token if they exist
 API.interceptors.request.use((req) => {
+  // Non-blocking preflight validation if last check is stale
+  validateIfStale(15000)
+
   const sessionId = localStorage.getItem("sessionId")
   const accessToken = localStorage.getItem("accessToken")
 

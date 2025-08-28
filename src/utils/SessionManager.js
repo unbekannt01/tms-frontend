@@ -5,6 +5,7 @@ class SessionManager {
     this.checkInterval = null
     this.isChecking = false
     this.baseURL = import.meta.env.VITE_API_URL
+    this.lastValidationAt = 0
   }
 
   startSessionCheck() {
@@ -73,6 +74,8 @@ class SessionManager {
             this.handleSessionExpired("session_expired")
           }
         }
+      } else {
+        this.lastValidationAt = Date.now()
       }
     } catch (error) {
       // Don't logout on network errors
@@ -93,6 +96,7 @@ class SessionManager {
 
     // Stop session checking
     this.stopSessionCheck()
+    this.lastValidationAt = 0
 
     // Check if we're already on an auth page
     const currentPath = window.location.pathname
@@ -205,3 +209,13 @@ export const validateSessionNow = () => {
 }
 
 export { sessionManager }
+
+// Non-blocking validation if last check is stale
+export const validateIfStale = (thresholdMs = 15000) => {
+  const last = sessionManager.lastValidationAt || 0
+  if (Date.now() - last >= thresholdMs) {
+    setTimeout(() => {
+      sessionManager.validateSession()
+    }, 0)
+  }
+}
