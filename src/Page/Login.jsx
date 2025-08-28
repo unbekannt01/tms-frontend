@@ -12,6 +12,10 @@ import {
   Link,
   Container,
   Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import API from "../api";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -31,6 +35,7 @@ export default function Login() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -118,6 +123,14 @@ export default function Login() {
     } finally {
       setResendLoading(false);
     }
+  };
+
+  const handleClick = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
   };
 
   return (
@@ -351,7 +364,7 @@ export default function Login() {
               <Link
                 component="button"
                 variant="body2"
-                onClick={() => navigate("/forgot-password")}
+                onClick={handleClick}
                 sx={{
                   color: "#059669",
                   textDecoration: "none",
@@ -362,6 +375,19 @@ export default function Login() {
                 Forgot your password?
               </Link>
             </Box>
+
+            {/* Popup / Dialog */}
+            <Dialog open={open} onClose={handleClose}>
+              <DialogTitle>Password Reset</DialogTitle>
+              <DialogContent>
+                  We’ve got some issues with this feature right now. Please try again later.
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleClose} color="primary" autoFocus>
+                  OK
+                </Button>
+              </DialogActions>
+            </Dialog>
           </Paper>
         </Box>
       </Container>
