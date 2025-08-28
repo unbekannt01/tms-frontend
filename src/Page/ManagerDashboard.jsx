@@ -426,17 +426,17 @@ export default function ManagerDashboard() {
             >
               <Button
                 variant="outlined"
-                disabled
+                onClick={() => navigate("/sessions")}
                 sx={{
-                  borderColor: "#d1d5db",
-                  color: "#9ca3af",
+                  borderColor: "#059669",
+                  color: "#059669",
                   fontWeight: 600,
                   textTransform: "none",
                   px: 3,
                   py: 1.2,
                 }}
               >
-                Sessions (Coming Soon)
+                Active Devices
               </Button>
               <Button
                 variant="contained"

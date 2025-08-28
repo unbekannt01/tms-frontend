@@ -294,18 +294,18 @@ export default function Dashboard() {
             </Button>
             <Button
               variant="outlined"
-              disabled
+              onClick={viewSessions}
               sx={{
                 px: 3,
                 py: 1.2,
                 borderRadius: 2,
-                borderColor: "#d1d5db",
-                color: "#9ca3af",
+                borderColor: "#059669",
+                color: "#059669",
                 fontWeight: 600,
                 textTransform: "none",
               }}
             >
-              Sessions (Coming Soon)
+              Active Devices
             </Button>
             <Button
               variant="outlined"
