@@ -35,7 +35,7 @@ export default function Login() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
-  // const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -125,13 +125,13 @@ export default function Login() {
     }
   };
 
-  // const handleClick = () => {
-  //   setOpen(true);
-  // };
+  const handleClick = () => {
+    setOpen(true);
+  };
 
-  // const handleClose = () => {
-  //   setOpen(false);
-  // };
+  const handleClose = () => {
+    setOpen(false);
+  };
 
   return (
     <Box
@@ -364,19 +364,19 @@ export default function Login() {
               <Link
                 component="button"
                 variant="body2"
-                onClick={() => navigate("/forgot-password")}
+                onClick={handleClick}
                 sx={{
                   color: "#059669",
                   textDecoration: "none",
-                  // fontWeight: 500,
-                  // "&:hover": { textDecoration: "underline" },
+                  fontWeight: 500,
+                  "&:hover": { textDecoration: "underline" },
                 }}
               >
                 Forgot your password?
               </Link>
             </Box>
 
-            {/* Popup / Dialog
+            {/* Popup / Dialog */}
             <Dialog open={open} onClose={handleClose}>
               <DialogTitle>Password Reset</DialogTitle>
               <DialogContent>
@@ -387,7 +387,7 @@ export default function Login() {
                   OK
                 </Button>
               </DialogActions>
-            </Dialog> */}
+            </Dialog>
           </Paper>
         </Box>
       </Container>
