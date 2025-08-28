@@ -156,7 +156,7 @@ class SessionManager {
       if (!currentSessionId) return false
 
       // <CHANGE> Send both session ID and JWT token
-      const headers = {
+      const headers = { 
         "Content-Type": "application/json",
         "x-session-id": currentSessionId,
       }

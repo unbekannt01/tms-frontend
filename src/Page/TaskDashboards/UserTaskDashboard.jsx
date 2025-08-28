@@ -117,7 +117,9 @@ function UserTaskDashboard({ user }) {
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
+    source: "",
   });
+  const [viewMode, setViewMode] = useState("table"); // 'table' | 'cards'
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState("create");
   const [selectedTask, setSelectedTask] = useState(null);
@@ -589,6 +591,79 @@ function UserTaskDashboard({ user }) {
     }
   };
 
+  // Compact, modern task card renderer for Cards view
+  const renderTaskCard = (task) => {
+    const statusDisplay = getStatusDisplay(task.status);
+    const sourceInfo = getTaskSourceInfo(task);
+    return (
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          backgroundColor: "#ffffff",
+          border: "1px solid rgba(6,95,70,0.12)",
+          "&:hover": { boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.15)" },
+        }}
+      >
+        <CardContent sx={{ p: 2.25 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#111827", pr: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {task.title}
+            </Typography>
+            <Chip
+              icon={statusDisplay.icon}
+              label={statusDisplay.label}
+              color={statusDisplay.color}
+              size="small"
+              sx={{ textTransform: "capitalize", fontWeight: 600 }}
+            />
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: task.description ? 1 : 0 }}>
+            <Chip
+              icon={sourceInfo.icon}
+              label={sourceInfo.label}
+              size="small"
+              sx={{ backgroundColor: sourceInfo.color.bg, color: sourceInfo.color.text, fontWeight: 600 }}
+            />
+          </Box>
+          {task.description && (
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              {task.description.length > 110 ? `${task.description.substring(0, 110)}…` : task.description}
+            </Typography>
+          )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            <Chip label={task.priority} color={priorityColors[task.priority]} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
+            <Chip label={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"} size="small" variant="outlined" />
+            <Chip label={formatEstimatedTime(task.estimatedHours)} size="small" variant="outlined" />
+          </Box>
+          <Stack direction="row" spacing={0.75} sx={{ mt: 1.25 }}>
+            <Tooltip title="View">
+              <IconButton size="small" onClick={() => handleViewTask(task)}>
+                <ViewIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Edit">
+              <IconButton size="small" onClick={() => handleEditTask(task)} sx={{ color: "#059669" }}>
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {canDeleteTask(task) && (
+              <Tooltip title="Delete">
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteClick(task)}
+                  sx={{ color: "#dc2626", "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.06)" } }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const renderDashboardTab = () => (
     <Box>
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -824,8 +899,58 @@ function UserTaskDashboard({ user }) {
               </Select>
             </FormControl>
           </Grid>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Assigned By</InputLabel>
+              <Select
+                value={filters.source}
+                label="Assigned By"
+                onChange={(e) => handleFilterChange("source", e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+                <MenuItem value="manager">Manager</MenuItem>
+                <MenuItem value="personal">Personal</MenuItem>
+                <MenuItem value="assigned">Other</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
         </Grid>
-
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="center">
+          <Stack direction="row" spacing={1} sx={{ mr: { sm: 1, xs: 0 } }}>
+            <Button
+              variant={viewMode === "table" ? "contained" : "outlined"}
+              onClick={() => setViewMode("table")}
+              sx={{
+                background:
+                  viewMode === "table"
+                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                    : "transparent",
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2,
+                minWidth: 0,
+              }}
+            >
+              Table
+            </Button>
+            <Button
+              variant={viewMode === "cards" ? "contained" : "outlined"}
+              onClick={() => setViewMode("cards")}
+              sx={{
+                background:
+                  viewMode === "cards"
+                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
+                    : "transparent",
+                fontWeight: 600,
+                borderRadius: 2,
+                px: 2,
+                minWidth: 0,
+              }}
+            >
+              Cards
+            </Button>
+          </Stack>
         <Button
           variant="contained"
           startIcon={<AddIcon />}
@@ -843,206 +968,203 @@ function UserTaskDashboard({ user }) {
         >
           Create Personal Task
         </Button>
+        </Stack>
       </Box>
-
-      {/* Tasks Table */}
-      <TableContainer component={Paper} variant="outlined">
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <strong>Title</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Priority</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Status</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Due Date</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Estimated Time</strong>
-              </TableCell>
-              <TableCell>
-                <strong>Actions</strong>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tasks.map((task) => {
-              // 🔧 GET NORMALIZED STATUS DISPLAY
-              const statusDisplay = getStatusDisplay(task.status);
-              // 🔧 Get task source information
-              const sourceInfo = getTaskSourceInfo(task);
-
-              return (
-                <TableRow key={task._id} hover>
-                  <TableCell>
-                    <Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600 }}
-                        >
-                          {task.title}
-                        </Typography>
-                        {/* 🔧 Show task source chip */}
-                        <Chip
-                          icon={sourceInfo.icon}
-                          label={sourceInfo.label}
-                          size="small"
-                          sx={{
-                            backgroundColor: sourceInfo.color.bg,
-                            color: sourceInfo.color.text,
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                            "& .MuiChip-icon": {
+      {viewMode === "table" ? (
+        <TableContainer component={Paper} variant="outlined">
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>
+                  <strong>Title</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Priority</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Status</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Due Date</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Estimated Time</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Actions</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {tasks
+                .filter((t) => {
+                  const l = getTaskSourceInfo(t).label
+                  const key = l === "Assigned by Admin" ? "admin" : l === "Assigned by Manager" ? "manager" : l === "Personal" ? "personal" : "assigned"
+                  return !filters.source || key === filters.source
+                })
+                .map((task) => {
+                const statusDisplay = getStatusDisplay(task.status);
+                const sourceInfo = getTaskSourceInfo(task);
+                return (
+                  <TableRow key={task._id} hover>
+                    <TableCell>
+                      <Box>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {task.title}
+                          </Typography>
+                          <Chip
+                            icon={sourceInfo.icon}
+                            label={sourceInfo.label}
+                            size="small"
+                            sx={{
+                              backgroundColor: sourceInfo.color.bg,
                               color: sourceInfo.color.text,
-                              fontSize: "0.875rem",
-                            },
-                          }}
-                        />
+                              fontWeight: 600,
+                              fontSize: "0.75rem",
+                              "& .MuiChip-icon": { color: sourceInfo.color.text, fontSize: "0.875rem" },
+                            }}
+                          />
+                        </Box>
+                        {task.description && (
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {task.description.substring(0, 60)}...
+                          </Typography>
+                        )}
+                        {sourceInfo.showDescription && (
+                          <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: sourceInfo.color.text, fontStyle: "italic" }}>
+                            {sourceInfo.description}
+                          </Typography>
+                        )}
+                        {task.tags && task.tags.length > 0 && (
+                          <Box sx={{ mt: 1, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                            {task.tags.slice(0, 2).map((tag, index) => (
+                              <Chip key={index} label={tag} size="small" variant="outlined" />
+                            ))}
+                            {task.tags.length > 2 && <Chip label={`+${task.tags.length - 2}`} size="small" variant="outlined" />}
+                          </Box>
+                        )}
                       </Box>
-                      {task.description && (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mt: 0.5 }}
-                        >
-                          {task.description.substring(0, 60)}...
-                        </Typography>
-                      )}
-                      {/* 🔧 Only show assignment description when showDescription is true */}
-                      {sourceInfo.showDescription && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            mt: 0.5,
-                            display: "block",
-                            color: sourceInfo.color.text,
-                            fontStyle: "italic",
-                          }}
-                        >
-                          {sourceInfo.description}
-                        </Typography>
-                      )}
-                      {task.tags && task.tags.length > 0 && (
-                        <Box
-                          sx={{
-                            mt: 1,
-                            display: "flex",
-                            gap: 0.5,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {task.tags.slice(0, 2).map((tag, index) => (
-                            <Chip
-                              key={index}
-                              label={tag}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))}
-                          {task.tags.length > 2 && (
-                            <Chip
-                              label={`+${task.tags.length - 2}`}
-                              size="small"
-                              variant="outlined"
-                            />
+                    </TableCell>
+                    <TableCell>
+                      <Chip label={task.priority} color={priorityColors[task.priority]} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
+                    </TableCell>
+                    <TableCell>
+                      <Chip icon={statusDisplay.icon} label={statusDisplay.label} color={statusDisplay.color} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
+                    </TableCell>
+                    <TableCell>
+                      {task.dueDate ? (
+                        <Box>
+                          <Typography variant="body2">{new Date(task.dueDate).toLocaleDateString()}</Typography>
+                          {new Date(task.dueDate) < new Date() && task.status !== "completed" && (
+                            <Typography variant="caption" color="error">Overdue</Typography>
                           )}
                         </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">No due date</Typography>
                       )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={task.priority}
-                      color={priorityColors[task.priority]}
-                      size="small"
-                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {/* 🔧 Status display */}
-                    <Chip
-                      icon={statusDisplay.icon}
-                      label={statusDisplay.label}
-                      color={statusDisplay.color}
-                      size="small"
-                      sx={{ textTransform: "capitalize", fontWeight: 600 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {task.dueDate ? (
-                      <Box>
-                        <Typography variant="body2">
-                          {new Date(task.dueDate).toLocaleDateString()}
-                        </Typography>
-                        {new Date(task.dueDate) < new Date() &&
-                          task.status !== "completed" && (
-                            <Typography variant="caption" color="error">
-                              Overdue
-                            </Typography>
-                          )}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No due date
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {/* 🕒 Time format */}
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {formatEstimatedTime(task.estimatedHours)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={0.5}>
-                      <Tooltip title="View Details">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewTask(task)}
-                        >
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Edit Task">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleEditTask(task)}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      {canDeleteTask(task) && (
-                        <Tooltip title="Delete Task">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteClick(task)}
-                            sx={{
-                              color: "#dc2626",
-                              "&:hover": {
-                                backgroundColor: "rgba(220, 38, 38, 0.04)",
-                              },
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatEstimatedTime(task.estimatedHours)}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={0.5}>
+                        <Tooltip title="View Details">
+                          <IconButton size="small" onClick={() => handleViewTask(task)}>
+                            <ViewIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      )}
-                    </Stack>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                        <Tooltip title="Edit Task">
+                          <IconButton size="small" onClick={() => handleEditTask(task)}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        {canDeleteTask(task) && (
+                          <Tooltip title="Delete Task">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteClick(task)}
+                              sx={{ color: "#dc2626", "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" } }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <Box>
+          {(() => {
+            const sections = [
+              {
+                key: "admin",
+                title: "Assigned by Admin",
+                filter: (t) => getTaskSourceInfo(t).label === "Assigned by Admin",
+              },
+              {
+                key: "manager",
+                title: "Assigned by Manager",
+                filter: (t) => getTaskSourceInfo(t).label === "Assigned by Manager",
+              },
+              {
+                key: "personal",
+                title: "Personal Tasks",
+                filter: (t) => getTaskSourceInfo(t).label === "Personal",
+              },
+              {
+                key: "assigned",
+                title: "Other Assigned",
+                filter: (t) => {
+                  const l = getTaskSourceInfo(t).label
+                  return l !== "Assigned by Admin" && l !== "Assigned by Manager" && l !== "Personal"
+                },
+              },
+            ]
+            // If a source filter is selected, flatten into a single grid
+            if (filters.source) {
+              const flatList = tasks.filter((t) => {
+                const l = getTaskSourceInfo(t).label
+                const key = l === "Assigned by Admin" ? "admin" : l === "Assigned by Manager" ? "manager" : l === "Personal" ? "personal" : "assigned"
+                return key === filters.source
+              })
+              return (
+                <Grid container spacing={2}>
+                  {flatList.map((task) => (
+                    <Grid item xs={12} sm={6} md={4} key={task._id}>
+                      {renderTaskCard(task)}
+                    </Grid>
+                  ))}
+                </Grid>
+              )
+            }
+            return sections.map((sec) => {
+              const list = tasks.filter(sec.filter)
+              if (list.length === 0) return null
+              return (
+                <Box key={sec.key} sx={{ mb: 3 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                    <Typography variant="h6" sx={{ color: "#059669", fontWeight: 700 }}>{sec.title}</Typography>
+                    <Chip label={list.length} size="small" sx={{ backgroundColor: "#dcfce7", color: "#166534", fontWeight: 700 }} />
+                  </Box>
+                  <Grid container spacing={2}>
+                    {list.map((task) => (
+                      <Grid item xs={12} sm={6} md={4} key={task._id}>
+                        {renderTaskCard(task)}
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              )
+            })
+          })()}
+        </Box>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
