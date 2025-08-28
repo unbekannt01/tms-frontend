@@ -199,4 +199,9 @@ export const terminateSession = (sessionId) => {
   return sessionManager.terminateSession(sessionId)
 }
 
+// Force an immediate validation (used on app load/refresh)
+export const validateSessionNow = () => {
+  return sessionManager.validateSession()
+}
+
 export { sessionManager }
