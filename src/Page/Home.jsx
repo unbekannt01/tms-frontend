@@ -67,7 +67,7 @@ export default function Home() {
       <Container maxWidth="sm">
         <Box className="fade-in" sx={{ textAlign: "center" }}>
           {/* ✅ Dynamic Notice Banner */}
-          {notice && (
+          {/* {notice && (
             <Paper
               elevation={2}
               sx={{
@@ -86,7 +86,7 @@ export default function Home() {
                 {notice}
               </Typography>
             </Paper>
-          )}
+          )} */}
 
           <Box sx={{ mb: 6 }}>
             <Typography
