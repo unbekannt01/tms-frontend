@@ -1,6 +1,6 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from "react"
 import {
   Box,
   Paper,
@@ -36,7 +36,7 @@ import {
   Badge,
   LinearProgress,
   Avatar,
-} from "@mui/material";
+} from "@mui/material"
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -57,16 +57,18 @@ import {
   AdminPanelSettings as AdminIcon,
   SupervisorAccount as ManagerIcon,
   Person as PersonIcon,
-} from "@mui/icons-material";
-import API from "../../api";
-import { useNavigate } from "react-router-dom";
+  AutoFixHigh as AutoFixHighIcon,
+} from "@mui/icons-material"
+import API from "../../api"
+import { useNavigate } from "react-router-dom"
+import { enhanceTaskDescription } from "../../services/aiService"
 
 const priorityColors = {
   low: "success",
   medium: "warning",
   high: "error",
   urgent: "error",
-};
+}
 
 // 🔧 FIXED STATUS MAPPING - Handle both "todo" and "pending"
 const statusColors = {
@@ -75,7 +77,7 @@ const statusColors = {
   "in-progress": "info",
   completed: "success",
   cancelled: "error",
-};
+}
 
 const statusIcons = {
   pending: <ScheduleIcon />,
@@ -83,48 +85,48 @@ const statusIcons = {
   "in-progress": <PlayArrowIcon />,
   completed: <CheckCircleIcon />,
   cancelled: <CancelIcon />,
-};
+}
 
 // 🔧 STATUS NORMALIZATION FUNCTION
 const normalizeStatus = (status) => {
   // Convert "todo" to "pending" for display consistency
-  if (status === "todo") return "pending";
-  return status || "pending";
-};
+  if (status === "todo") return "pending"
+  return status || "pending"
+}
 
 // 🔧 STATUS DISPLAY FUNCTION
 const getStatusDisplay = (status) => {
-  const normalized = normalizeStatus(status);
+  const normalized = normalizeStatus(status)
   return {
     label: normalized.replace("-", " "),
     color: statusColors[normalized] || statusColors.pending,
     icon: statusIcons[normalized] || statusIcons.pending,
-  };
-};
+  }
+}
 
 function UserTaskDashboard({ user }) {
-  const navigate = useNavigate();
-  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}");
+  const navigate = useNavigate()
+  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}")
 
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [currentTab, setCurrentTab] = useState(0);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [tasks, setTasks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState("")
+  const [currentTab, setCurrentTab] = useState(0)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
     source: "",
-  });
-  const [viewMode, setViewMode] = useState("table"); // 'table' | 'cards'
-  const [openDialog, setOpenDialog] = useState(false);
-  const [dialogMode, setDialogMode] = useState("create");
-  const [selectedTask, setSelectedTask] = useState(null);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [taskToDelete, setTaskToDelete] = useState(null);
+  })
+  const [viewMode, setViewMode] = useState("table") // 'table' | 'cards'
+  const [openDialog, setOpenDialog] = useState(false)
+  const [dialogMode, setDialogMode] = useState("create")
+  const [selectedTask, setSelectedTask] = useState(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState(null)
   const [taskForm, setTaskForm] = useState({
     title: "",
     description: "",
@@ -134,119 +136,141 @@ function UserTaskDashboard({ user }) {
     estimatedHours: 0,
     estimatedMinutes: 0,
     status: "pending", // 🔧 ALWAYS DEFAULT TO "pending"
-  });
+  })
   // 🔧 NEW: Store original task data for comparison
-  const [originalTaskData, setOriginalTaskData] = useState(null);
-  const [newComment, setNewComment] = useState("");
-  const [commentLoading, setCommentLoading] = useState(false);
-  const [taskStats, setTaskStats] = useState(null);
+  const [originalTaskData, setOriginalTaskData] = useState(null)
+  const [newComment, setNewComment] = useState("")
+  const [commentLoading, setCommentLoading] = useState(false)
+  const [taskStats, setTaskStats] = useState(null)
+  const [enhancing, setEnhancing] = useState(false)
+
+  async function handleEnhanceDescription() {
+    try {
+      if (!taskForm?.description || !taskForm.description.trim()) {
+        window.alert("Please enter a description to enhance.")
+        return
+      }
+      setEnhancing(true)
+      const res = await enhanceTaskDescription({
+        title: taskForm.title || "",
+        description: taskForm.description,
+      })
+      const enhanced = res?.enhancedDescription || ""
+      if (!enhanced) {
+        window.alert("AI enhancement did not return a result.")
+        return
+      }
+      setTaskForm({ ...taskForm, description: enhanced })
+    } catch (err) {
+      console.error("[v0] AI enhance failed:", err)
+      window.alert("Unable to enhance description right now.")
+    } finally {
+      setEnhancing(false)
+    }
+  }
 
   useEffect(() => {
-    fetchTasks();
-    fetchTaskStats();
-  }, [page, filters, currentTab]);
+    fetchTasks()
+    fetchTaskStats()
+  }, [page, filters, currentTab])
 
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-      return () => clearTimeout(timer);
+        setSuccess("")
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [success]);
+  }, [success])
 
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
-        setError("");
-      }, 3000);
-      return () => clearTimeout(timer);
+        setError("")
+      }, 3000)
+      return () => clearTimeout(timer)
     }
-  }, [error]);
+  }, [error])
 
   // 🔧 NEW: Calculate remaining hours in today
   const getRemainingHoursToday = () => {
-    const now = new Date();
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999); // Set to end of day
+    const now = new Date()
+    const endOfDay = new Date()
+    endOfDay.setHours(23, 59, 59, 999) // Set to end of day
 
-    const remainingMs = endOfDay.getTime() - now.getTime();
-    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
-    const remainingMinutes = Math.floor(
-      (remainingMs % (1000 * 60 * 60)) / (1000 * 60)
-    );
+    const remainingMs = endOfDay.getTime() - now.getTime()
+    const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60))
+    const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60))
 
     return {
       hours: remainingHours,
       minutes: remainingMinutes,
       total: remainingHours + remainingMinutes / 60,
-    };
-  };
+    }
+  }
 
   // 🔧 NEW: Check if selected date is today
   const isSelectedDateToday = () => {
-    if (!taskForm.dueDate) return false;
-    const selectedDate = new Date(taskForm.dueDate);
-    const today = new Date();
-    return selectedDate.toDateString() === today.toDateString();
-  };
+    if (!taskForm.dueDate) return false
+    const selectedDate = new Date(taskForm.dueDate)
+    const today = new Date()
+    return selectedDate.toDateString() === today.toDateString()
+  }
 
   // 🔧 NEW: Get current estimated time in hours
   const getCurrentEstimatedHours = () => {
-    return taskForm.estimatedHours + taskForm.estimatedMinutes / 60;
-  };
+    return taskForm.estimatedHours + taskForm.estimatedMinutes / 60
+  }
 
   // 🔧 NEW: Check if estimated time exceeds remaining time
   const exceedsRemainingTime = () => {
-    if (!isSelectedDateToday()) return false;
-    const remaining = getRemainingHoursToday();
-    const estimated = getCurrentEstimatedHours();
-    return estimated > remaining.total;
-  };
+    if (!isSelectedDateToday()) return false
+    const remaining = getRemainingHoursToday()
+    const estimated = getCurrentEstimatedHours()
+    return estimated > remaining.total
+  }
 
   const fetchTasks = async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "10",
         assignedTo: currentUser._id,
         ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v)),
-      });
+      })
 
-      const { data } = await API.get(`/tasks?${params}`);
+      const { data } = await API.get(`/tasks?${params}`)
 
       // 🔧 NORMALIZE STATUS IN FETCHED TASKS
       const normalizedTasks = (data.tasks || []).map((task) => ({
         ...task,
         status: normalizeStatus(task.status),
-      }));
+      }))
 
-      setTasks(normalizedTasks);
-      setTotalPages(data.pagination.totalPages);
-      setTotal(data.pagination.total);
+      setTasks(normalizedTasks)
+      setTotalPages(data.pagination.totalPages)
+      setTotal(data.pagination.total)
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch tasks");
+      setError(err.response?.data?.message || "Failed to fetch tasks")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const fetchTaskStats = async () => {
     try {
-      const { data } = await API.get(
-        `/tasks/stats?assignedTo=${currentUser._id}`
-      );
-      setTaskStats(data);
+      const { data } = await API.get(`/tasks/stats?assignedTo=${currentUser._id}`)
+      setTaskStats(data)
     } catch (err) {
       // Silent fail for stats
     }
-  };
+  }
 
   // 🔧 FIXED: Role detection based on your actual API data
   const getTaskSourceInfo = (task) => {
-    const createdBy = task.createdBy;
-    const currentUserId = currentUser._id;
+    const createdBy = task.createdBy
+    const currentUserId = currentUser._id
 
     // If task is created by the current user (personal task)
     if (createdBy?._id === currentUserId) {
@@ -256,42 +280,32 @@ function UserTaskDashboard({ user }) {
         color: { bg: "#dcfce7", text: "#166534" },
         description: "Created by you",
         showDescription: false,
-      };
+      }
     }
 
     // 🔧 FIXED: Detect role from firstName, lastName, userName, or email
     const getUserRole = (userObj) => {
-      if (!userObj) return null;
+      if (!userObj) return null
 
-      const firstName = (userObj.firstName || "").toLowerCase();
-      const lastName = (userObj.lastName || "").toLowerCase();
-      const userName = (userObj.userName || "").toLowerCase();
-      const email = (userObj.email || "").toLowerCase();
+      const firstName = (userObj.firstName || "").toLowerCase()
+      const lastName = (userObj.lastName || "").toLowerCase()
+      const userName = (userObj.userName || "").toLowerCase()
+      const email = (userObj.email || "").toLowerCase()
 
       // Check if user is admin
-      if (
-        firstName === "admin" ||
-        lastName === "admin" ||
-        userName === "admin" ||
-        email.includes("admin")
-      ) {
-        return "admin";
+      if (firstName === "admin" || lastName === "admin" || userName === "admin" || email.includes("admin")) {
+        return "admin"
       }
 
       // Check if user is manager
-      if (
-        firstName === "manager" ||
-        lastName === "manager" ||
-        userName === "manager" ||
-        email.includes("manager")
-      ) {
-        return "manager";
+      if (firstName === "manager" || lastName === "manager" || userName === "manager" || email.includes("manager")) {
+        return "manager"
       }
 
-      return null;
-    };
+      return null
+    }
 
-    const userRole = getUserRole(createdBy);
+    const userRole = getUserRole(createdBy)
 
     // If task is assigned by Admin
     if (userRole === "admin") {
@@ -301,7 +315,7 @@ function UserTaskDashboard({ user }) {
         color: { bg: "#dbeafe", text: "#1e40af" },
         description: `Assigned by Admin`,
         showDescription: false,
-      };
+      }
     }
 
     // If task is assigned by Manager
@@ -312,7 +326,7 @@ function UserTaskDashboard({ user }) {
         color: { bg: "#fef3c7", text: "#92400e" },
         description: `Assigned by Manager`,
         showDescription: false,
-      };
+      }
     }
 
     // Fallback for unknown roles
@@ -321,11 +335,9 @@ function UserTaskDashboard({ user }) {
         label: "Assigned",
         icon: <AssignmentIcon />,
         color: { bg: "#f3f4f6", text: "#374151" },
-        description: `Assigned by ${createdBy.firstName || "Unknown"} ${
-          createdBy.lastName || "User"
-        }`,
+        description: `Assigned by ${createdBy.firstName || "Unknown"} ${createdBy.lastName || "User"}`,
         showDescription: true,
-      };
+      }
     }
 
     return {
@@ -334,8 +346,8 @@ function UserTaskDashboard({ user }) {
       color: { bg: "#f3f4f6", text: "#374151" },
       description: "Assigned task",
       showDescription: false,
-    };
-  };
+    }
+  }
 
   const handleCreateTask = () => {
     // 🔧 ALWAYS SET DEFAULT STATUS TO "pending", NEVER "todo"
@@ -348,96 +360,94 @@ function UserTaskDashboard({ user }) {
       estimatedHours: 0,
       estimatedMinutes: 0,
       status: "pending", // 🔧 EXPLICITLY SET TO "pending"
-    };
+    }
 
-    setTaskForm(defaultForm);
-    setOriginalTaskData(null); // No original data for new tasks
-    setDialogMode("create");
-    setOpenDialog(true);
-  };
+    setTaskForm(defaultForm)
+    setOriginalTaskData(null) // No original data for new tasks
+    setDialogMode("create")
+    setOpenDialog(true)
+  }
 
   const handleEditTask = (task) => {
-    const isSelfCreated = task.createdBy?._id === currentUser._id;
-    const totalHours = task.estimatedHours || 0;
-    const hours = Math.floor(totalHours);
-    const minutes = Math.round((totalHours - hours) * 60);
+    const isSelfCreated = task.createdBy?._id === currentUser._id
+    const totalHours = task.estimatedHours || 0
+    const hours = Math.floor(totalHours)
+    const minutes = Math.round((totalHours - hours) * 60)
 
     // 🔧 NORMALIZE STATUS WHEN EDITING
-    const normalizedStatus = normalizeStatus(task.status);
+    const normalizedStatus = normalizeStatus(task.status)
 
     const formData = {
       title: task.title || "",
       description: task.description || "",
-      dueDate: task.dueDate
-        ? new Date(task.dueDate).toISOString().split("T")[0]
-        : "",
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "",
       priority: task.priority || "medium",
       tags: task.tags?.join(", ") || "",
       estimatedHours: hours,
       estimatedMinutes: minutes,
       status: normalizedStatus, // 🔧 USE NORMALIZED STATUS
-    };
+    }
 
-    setTaskForm(formData);
+    setTaskForm(formData)
     // 🔧 NEW: Store original data for comparison
-    setOriginalTaskData(formData);
-    setSelectedTask({ ...task, isSelfCreated });
-    setDialogMode("edit");
-    setOpenDialog(true);
-  };
+    setOriginalTaskData(formData)
+    setSelectedTask({ ...task, isSelfCreated })
+    setDialogMode("edit")
+    setOpenDialog(true)
+  }
 
   const handleViewTask = async (task) => {
     try {
-      const { data } = await API.get(`/tasks/${task._id}`);
+      const { data } = await API.get(`/tasks/${task._id}`)
 
       // 🔧 NORMALIZE STATUS IN VIEW DATA
       const normalizedTask = {
         ...data,
         status: normalizeStatus(data.status),
-      };
+      }
 
-      setSelectedTask(normalizedTask);
-      setDialogMode("view");
-      setOpenDialog(true);
+      setSelectedTask(normalizedTask)
+      setDialogMode("view")
+      setOpenDialog(true)
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch task details");
+      setError(err.response?.data?.message || "Failed to fetch task details")
     }
-  };
+  }
 
   const handleDeleteClick = (task) => {
-    setTaskToDelete(task);
-    setDeleteConfirmOpen(true);
-  };
+    setTaskToDelete(task)
+    setDeleteConfirmOpen(true)
+  }
 
   const handleDeleteConfirm = async () => {
-    if (!taskToDelete) return;
+    if (!taskToDelete) return
 
     try {
-      await API.delete(`/tasks/${taskToDelete._id}`);
-      setSuccess("Task deleted successfully!");
-      setDeleteConfirmOpen(false);
-      setTaskToDelete(null);
-      fetchTasks();
-      fetchTaskStats();
+      await API.delete(`/tasks/${taskToDelete._id}`)
+      setSuccess("Task deleted successfully!")
+      setDeleteConfirmOpen(false)
+      setTaskToDelete(null)
+      fetchTasks()
+      fetchTaskStats()
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to delete task");
-      setDeleteConfirmOpen(false);
-      setTaskToDelete(null);
+      setError(err.response?.data?.message || "Failed to delete task")
+      setDeleteConfirmOpen(false)
+      setTaskToDelete(null)
     }
-  };
+  }
 
   const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-    setTaskToDelete(null);
-  };
+    setDeleteConfirmOpen(false)
+    setTaskToDelete(null)
+  }
 
   const canDeleteTask = (task) => {
-    return task.createdBy?._id === currentUser._id;
-  };
+    return task.createdBy?._id === currentUser._id
+  }
 
   // 🔧 NEW: Function to check if task data has changed
   const hasTaskDataChanged = () => {
-    if (!originalTaskData) return true; // For new tasks, always allow saving
+    if (!originalTaskData) return true // For new tasks, always allow saving
 
     const currentData = {
       title: taskForm.title,
@@ -448,31 +458,30 @@ function UserTaskDashboard({ user }) {
       status: taskForm.status,
       estimatedHours: taskForm.estimatedHours,
       estimatedMinutes: taskForm.estimatedMinutes,
-    };
+    }
 
     // Compare each field
     return Object.keys(currentData).some((key) => {
-      return currentData[key] !== originalTaskData[key];
-    });
-  };
+      return currentData[key] !== originalTaskData[key]
+    })
+  }
 
   const handleSubmitTask = async () => {
     try {
       // 🔧 NEW: Validate estimated time against remaining time if due today
       if (exceedsRemainingTime()) {
-        setError("You don't have enough time left today for this task!");
-        return;
+        setError("You don't have enough time left today for this task!")
+        return
       }
 
       // 🔧 NEW: Check if data has changed before making API call
       if (dialogMode === "edit" && !hasTaskDataChanged()) {
-        setSuccess("No changes detected.");
-        setOpenDialog(false);
-        return;
+        setSuccess("No changes detected.")
+        setOpenDialog(false)
+        return
       }
 
-      const totalEstimatedHours =
-        taskForm.estimatedHours + taskForm.estimatedMinutes / 60;
+      const totalEstimatedHours = taskForm.estimatedHours + taskForm.estimatedMinutes / 60
 
       const formData = {
         ...taskForm,
@@ -481,120 +490,119 @@ function UserTaskDashboard({ user }) {
           .split(",")
           .map((tag) => tag.trim())
           .filter((tag) => tag),
-        estimatedHours:
-          totalEstimatedHours > 0 ? totalEstimatedHours : undefined,
+        estimatedHours: totalEstimatedHours > 0 ? totalEstimatedHours : undefined,
         // 🔧 ENSURE STATUS IS ALWAYS "pending" FOR NEW TASKS
         status: dialogMode === "create" ? "pending" : taskForm.status,
-      };
-
-      delete formData.estimatedMinutes;
-
-      if (dialogMode === "create") {
-        await API.post("/tasks", formData);
-        setSuccess("Personal task created successfully!");
-      } else {
-        await API.put(`/tasks/${selectedTask._id}`, formData);
-        setSuccess("Task updated successfully!");
       }
 
-      setOpenDialog(false);
-      fetchTasks();
-      fetchTaskStats();
+      delete formData.estimatedMinutes
+
+      if (dialogMode === "create") {
+        await API.post("/tasks", formData)
+        setSuccess("Personal task created successfully!")
+      } else {
+        await API.put(`/tasks/${selectedTask._id}`, formData)
+        setSuccess("Task updated successfully!")
+      }
+
+      setOpenDialog(false)
+      fetchTasks()
+      fetchTaskStats()
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to save task");
+      setError(err.response?.data?.message || "Failed to save task")
     }
-  };
+  }
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim()) return
 
     try {
-      setCommentLoading(true);
+      setCommentLoading(true)
       await API.post(`/tasks/${selectedTask._id}/comments`, {
         text: newComment,
-      });
-      setNewComment("");
+      })
+      setNewComment("")
 
-      const { data } = await API.get(`/tasks/${selectedTask._id}`);
+      const { data } = await API.get(`/tasks/${selectedTask._id}`)
 
       // 🔧 NORMALIZE STATUS IN UPDATED TASK
       const normalizedTask = {
         ...data,
         status: normalizeStatus(data.status),
-      };
+      }
 
-      setSelectedTask(normalizedTask);
-      setSuccess("Comment added successfully!");
+      setSelectedTask(normalizedTask)
+      setSuccess("Comment added successfully!")
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to add comment");
+      setError(err.response?.data?.message || "Failed to add comment")
     } finally {
-      setCommentLoading(false);
+      setCommentLoading(false)
     }
-  };
+  }
 
   // 🔧 NEW: Handle filter changes without unnecessary page resets
   const handleFilterChange = (filterType, value) => {
-    const newFilters = { ...filters, [filterType]: value };
-    setFilters(newFilters);
+    const newFilters = { ...filters, [filterType]: value }
+    setFilters(newFilters)
     // Reset to page 1 only when filters actually change
     if (filters[filterType] !== value) {
-      setPage(1);
+      setPage(1)
     }
-  };
+  }
 
-  const hourOptions = Array.from({ length: 25 }, (_, i) => i);
-  const minuteOptions = [0, 15, 30, 45];
+  const hourOptions = Array.from({ length: 25 }, (_, i) => i)
+  const minuteOptions = [0, 15, 30, 45]
 
   // 🕒 SINGLE CONSISTENT TIME FORMATTING FUNCTION
   const formatEstimatedTime = (decimalHours) => {
     if (!decimalHours || decimalHours === 0) {
-      return "0h 0m";
+      return "0h 0m"
     }
 
-    const totalMinutes = Math.round(decimalHours * 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
+    const totalMinutes = Math.round(decimalHours * 60)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
 
     // Format consistently
-    return `${hours}h ${minutes}m`;
-  };
+    return `${hours}h ${minutes}m`
+  }
 
   const getPriorityCardColor = (priority) => {
     switch (priority) {
       case "low":
-        return { bg: "#f0fdf4", border: "#22c55e", text: "#166534" };
+        return { bg: "#f0fdf4", border: "#22c55e", text: "#166534" }
       case "medium":
-        return { bg: "#fffbeb", border: "#f59e0b", text: "#92400e" };
+        return { bg: "#fffbeb", border: "#f59e0b", text: "#92400e" }
       case "high":
-        return { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" };
+        return { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" }
       case "urgent":
-        return { bg: "#fef2f2", border: "#dc2626", text: "#991b1b" };
+        return { bg: "#fef2f2", border: "#dc2626", text: "#991b1b" }
       default:
-        return { bg: "#f3f4f6", border: "#6b7280", text: "#374151" };
+        return { bg: "#f3f4f6", border: "#6b7280", text: "#374151" }
     }
-  };
+  }
 
   const getStatusCardColor = (status) => {
     // 🔧 NORMALIZE STATUS FOR COLOR MAPPING
-    const normalized = normalizeStatus(status);
+    const normalized = normalizeStatus(status)
     switch (normalized) {
       case "pending":
-        return { bg: "#f8fafc", border: "#64748b", text: "#475569" };
+        return { bg: "#f8fafc", border: "#64748b", text: "#475569" }
       case "in-progress":
-        return { bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" };
+        return { bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" }
       case "completed":
-        return { bg: "#f0fdf4", border: "#22c55e", text: "#166534" };
+        return { bg: "#f0fdf4", border: "#22c55e", text: "#166534" }
       case "cancelled":
-        return { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" };
+        return { bg: "#fef2f2", border: "#ef4444", text: "#dc2626" }
       default:
-        return { bg: "#f3f4f6", border: "#6b7280", text: "#374151" };
+        return { bg: "#f3f4f6", border: "#6b7280", text: "#374151" }
     }
-  };
+  }
 
   // Compact, modern task card renderer for Cards view
   const renderTaskCard = (task) => {
-    const statusDisplay = getStatusDisplay(task.status);
-    const sourceInfo = getTaskSourceInfo(task);
+    const statusDisplay = getStatusDisplay(task.status)
+    const sourceInfo = getTaskSourceInfo(task)
     return (
       <Card
         elevation={0}
@@ -607,7 +615,17 @@ function UserTaskDashboard({ user }) {
       >
         <CardContent sx={{ p: 2.25 }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "#111827", pr: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 700,
+                color: "#111827",
+                pr: 1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {task.title}
             </Typography>
             <Chip
@@ -632,8 +650,17 @@ function UserTaskDashboard({ user }) {
             </Typography>
           )}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-            <Chip label={task.priority} color={priorityColors[task.priority]} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
-            <Chip label={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"} size="small" variant="outlined" />
+            <Chip
+              label={task.priority}
+              color={priorityColors[task.priority]}
+              size="small"
+              sx={{ textTransform: "capitalize", fontWeight: 600 }}
+            />
+            <Chip
+              label={task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}
+              size="small"
+              variant="outlined"
+            />
             <Chip label={formatEstimatedTime(task.estimatedHours)} size="small" variant="outlined" />
           </Box>
           <Stack direction="row" spacing={0.75} sx={{ mt: 1.25 }}>
@@ -661,8 +688,8 @@ function UserTaskDashboard({ user }) {
           </Stack>
         </CardContent>
       </Card>
-    );
-  };
+    )
+  }
 
   const renderDashboardTab = () => (
     <Box>
@@ -723,8 +750,7 @@ function UserTaskDashboard({ user }) {
             }}
           >
             <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-              {taskStats?.statusBreakdown?.find((s) => s._id === "in-progress")
-                ?.count || 0}
+              {taskStats?.statusBreakdown?.find((s) => s._id === "in-progress")?.count || 0}
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.9 }}>
               In Progress
@@ -745,8 +771,7 @@ function UserTaskDashboard({ user }) {
             }}
           >
             <Typography variant="h3" sx={{ fontWeight: 700, mb: 1 }}>
-              {taskStats?.statusBreakdown?.find((s) => s._id === "completed")
-                ?.count || 0}
+              {taskStats?.statusBreakdown?.find((s) => s._id === "completed")?.count || 0}
             </Typography>
             <Typography variant="body1" sx={{ opacity: 0.9 }}>
               Completed
@@ -762,35 +787,26 @@ function UserTaskDashboard({ user }) {
           mb: 3,
           borderRadius: 3,
           backgroundColor: "#ffffff",
-          boxShadow:
-            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
         <CardContent sx={{ p: 4 }}>
-          <Typography
-            variant="h6"
-            sx={{ mb: 3, color: "#059669", fontWeight: 600 }}
-          >
+          <Typography variant="h6" sx={{ mb: 3, color: "#059669", fontWeight: 600 }}>
             My Progress Overview
           </Typography>
           <Grid container spacing={4}>
             <Grid item xs={12} md={6}>
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 2, color: "#374151", fontWeight: 600 }}
-              >
+              <Typography variant="subtitle2" sx={{ mb: 2, color: "#374151", fontWeight: 600 }}>
                 Task Completion Rate
               </Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                 <LinearProgress
                   variant="determinate"
                   value={Math.round(
-                    ((taskStats?.statusBreakdown?.find(
-                      (s) => s._id === "completed"
-                    )?.count || 0) /
+                    ((taskStats?.statusBreakdown?.find((s) => s._id === "completed")?.count || 0) /
                       (taskStats?.totalTasks || 1)) *
-                      100
+                      100,
                   )}
                   sx={{
                     flexGrow: 1,
@@ -803,26 +819,18 @@ function UserTaskDashboard({ user }) {
                     },
                   }}
                 />
-                <Typography
-                  variant="body2"
-                  sx={{ color: "#059669", fontWeight: 600, minWidth: "40px" }}
-                >
+                <Typography variant="body2" sx={{ color: "#059669", fontWeight: 600, minWidth: "40px" }}>
                   {Math.round(
-                    ((taskStats?.statusBreakdown?.find(
-                      (s) => s._id === "completed"
-                    )?.count || 0) /
+                    ((taskStats?.statusBreakdown?.find((s) => s._id === "completed")?.count || 0) /
                       (taskStats?.totalTasks || 1)) *
-                      100
+                      100,
                   )}
                   %
                 </Typography>
               </Box>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Typography
-                variant="subtitle2"
-                sx={{ mb: 2, color: "#374151", fontWeight: 600 }}
-              >
+              <Typography variant="subtitle2" sx={{ mb: 2, color: "#374151", fontWeight: 600 }}>
                 Priority Distribution
               </Typography>
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
@@ -841,7 +849,7 @@ function UserTaskDashboard({ user }) {
         </CardContent>
       </Card>
     </Box>
-  );
+  )
 
   const renderTasksTab = () => (
     <Box>
@@ -922,10 +930,7 @@ function UserTaskDashboard({ user }) {
               variant={viewMode === "table" ? "contained" : "outlined"}
               onClick={() => setViewMode("table")}
               sx={{
-                background:
-                  viewMode === "table"
-                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                    : "transparent",
+                background: viewMode === "table" ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "transparent",
                 fontWeight: 600,
                 borderRadius: 2,
                 px: 2,
@@ -938,10 +943,7 @@ function UserTaskDashboard({ user }) {
               variant={viewMode === "cards" ? "contained" : "outlined"}
               onClick={() => setViewMode("cards")}
               sx={{
-                background:
-                  viewMode === "cards"
-                    ? "linear-gradient(135deg, #059669 0%, #047857 100%)"
-                    : "transparent",
+                background: viewMode === "cards" ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "transparent",
                 fontWeight: 600,
                 borderRadius: 2,
                 px: 2,
@@ -951,23 +953,23 @@ function UserTaskDashboard({ user }) {
               Cards
             </Button>
           </Stack>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateTask}
-          sx={{
-            background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-            fontWeight: 600,
-            borderRadius: 2,
-            px: 3,
-            "&:hover": {
-              background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
-              boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
-            },
-          }}
-        >
-          Create Personal Task
-        </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateTask}
+            sx={{
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              fontWeight: 600,
+              borderRadius: 2,
+              px: 3,
+              "&:hover": {
+                background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
+              },
+            }}
+          >
+            Create Personal Task
+          </Button>
         </Stack>
       </Box>
       {viewMode === "table" ? (
@@ -999,102 +1001,131 @@ function UserTaskDashboard({ user }) {
               {tasks
                 .filter((t) => {
                   const l = getTaskSourceInfo(t).label
-                  const key = l === "Assigned by Admin" ? "admin" : l === "Assigned by Manager" ? "manager" : l === "Personal" ? "personal" : "assigned"
+                  const key =
+                    l === "Assigned by Admin"
+                      ? "admin"
+                      : l === "Assigned by Manager"
+                        ? "manager"
+                        : l === "Personal"
+                          ? "personal"
+                          : "assigned"
                   return !filters.source || key === filters.source
                 })
                 .map((task) => {
-                const statusDisplay = getStatusDisplay(task.status);
-                const sourceInfo = getTaskSourceInfo(task);
-                return (
-                  <TableRow key={task._id} hover>
-                    <TableCell>
-                      <Box>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {task.title}
-                          </Typography>
-                          <Chip
-                            icon={sourceInfo.icon}
-                            label={sourceInfo.label}
-                            size="small"
-                            sx={{
-                              backgroundColor: sourceInfo.color.bg,
-                              color: sourceInfo.color.text,
-                              fontWeight: 600,
-                              fontSize: "0.75rem",
-                              "& .MuiChip-icon": { color: sourceInfo.color.text, fontSize: "0.875rem" },
-                            }}
-                          />
-                        </Box>
-                        {task.description && (
-                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                            {task.description.substring(0, 60)}...
-                          </Typography>
-                        )}
-                        {sourceInfo.showDescription && (
-                          <Typography variant="caption" sx={{ mt: 0.5, display: "block", color: sourceInfo.color.text, fontStyle: "italic" }}>
-                            {sourceInfo.description}
-                          </Typography>
-                        )}
-                        {task.tags && task.tags.length > 0 && (
-                          <Box sx={{ mt: 1, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-                            {task.tags.slice(0, 2).map((tag, index) => (
-                              <Chip key={index} label={tag} size="small" variant="outlined" />
-                            ))}
-                            {task.tags.length > 2 && <Chip label={`+${task.tags.length - 2}`} size="small" variant="outlined" />}
-                          </Box>
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip label={task.priority} color={priorityColors[task.priority]} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
-                    </TableCell>
-                    <TableCell>
-                      <Chip icon={statusDisplay.icon} label={statusDisplay.label} color={statusDisplay.color} size="small" sx={{ textTransform: "capitalize", fontWeight: 600 }} />
-                    </TableCell>
-                    <TableCell>
-                      {task.dueDate ? (
+                  const statusDisplay = getStatusDisplay(task.status)
+                  const sourceInfo = getTaskSourceInfo(task)
+                  return (
+                    <TableRow key={task._id} hover>
+                      <TableCell>
                         <Box>
-                          <Typography variant="body2">{new Date(task.dueDate).toLocaleDateString()}</Typography>
-                          {new Date(task.dueDate) < new Date() && task.status !== "completed" && (
-                            <Typography variant="caption" color="error">Overdue</Typography>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                              {task.title}
+                            </Typography>
+                            <Chip
+                              icon={sourceInfo.icon}
+                              label={sourceInfo.label}
+                              size="small"
+                              sx={{
+                                backgroundColor: sourceInfo.color.bg,
+                                color: sourceInfo.color.text,
+                                fontWeight: 600,
+                                fontSize: "0.75rem",
+                                "& .MuiChip-icon": { color: sourceInfo.color.text, fontSize: "0.875rem" },
+                              }}
+                            />
+                          </Box>
+                          {task.description && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              {task.description.substring(0, 60)}...
+                            </Typography>
+                          )}
+                          {sourceInfo.showDescription && (
+                            <Typography
+                              variant="caption"
+                              sx={{ mt: 0.5, display: "block", color: sourceInfo.color.text, fontStyle: "italic" }}
+                            >
+                              {sourceInfo.description}
+                            </Typography>
+                          )}
+                          {task.tags && task.tags.length > 0 && (
+                            <Box sx={{ mt: 1, display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                              {task.tags.slice(0, 2).map((tag, index) => (
+                                <Chip key={index} label={tag} size="small" variant="outlined" />
+                              ))}
+                              {task.tags.length > 2 && (
+                                <Chip label={`+${task.tags.length - 2}`} size="small" variant="outlined" />
+                              )}
+                            </Box>
                           )}
                         </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">No due date</Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>{formatEstimatedTime(task.estimatedHours)}</Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="View Details">
-                          <IconButton size="small" onClick={() => handleViewTask(task)}>
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Edit Task">
-                          <IconButton size="small" onClick={() => handleEditTask(task)}>
-                            <EditIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        {canDeleteTask(task) && (
-                          <Tooltip title="Delete Task">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteClick(task)}
-                              sx={{ color: "#dc2626", "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" } }}
-                            >
-                              <DeleteIcon fontSize="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={task.priority}
+                          color={priorityColors[task.priority]}
+                          size="small"
+                          sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={statusDisplay.icon}
+                          label={statusDisplay.label}
+                          color={statusDisplay.color}
+                          size="small"
+                          sx={{ textTransform: "capitalize", fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {task.dueDate ? (
+                          <Box>
+                            <Typography variant="body2">{new Date(task.dueDate).toLocaleDateString()}</Typography>
+                            {new Date(task.dueDate) < new Date() && task.status !== "completed" && (
+                              <Typography variant="caption" color="error">
+                                Overdue
+                              </Typography>
+                            )}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            No due date
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          {formatEstimatedTime(task.estimatedHours)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={0.5}>
+                          <Tooltip title="View Details">
+                            <IconButton size="small" onClick={() => handleViewTask(task)}>
+                              <ViewIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                        )}
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                          <Tooltip title="Edit Task">
+                            <IconButton size="small" onClick={() => handleEditTask(task)}>
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {canDeleteTask(task) && (
+                            <Tooltip title="Delete Task">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteClick(task)}
+                                sx={{ color: "#dc2626", "&:hover": { backgroundColor: "rgba(220, 38, 38, 0.04)" } }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -1130,7 +1161,14 @@ function UserTaskDashboard({ user }) {
             if (filters.source) {
               const flatList = tasks.filter((t) => {
                 const l = getTaskSourceInfo(t).label
-                const key = l === "Assigned by Admin" ? "admin" : l === "Assigned by Manager" ? "manager" : l === "Personal" ? "personal" : "assigned"
+                const key =
+                  l === "Assigned by Admin"
+                    ? "admin"
+                    : l === "Assigned by Manager"
+                      ? "manager"
+                      : l === "Personal"
+                        ? "personal"
+                        : "assigned"
                 return key === filters.source
               })
               return (
@@ -1149,8 +1187,14 @@ function UserTaskDashboard({ user }) {
               return (
                 <Box key={sec.key} sx={{ mb: 3 }}>
                   <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-                    <Typography variant="h6" sx={{ color: "#059669", fontWeight: 700 }}>{sec.title}</Typography>
-                    <Chip label={list.length} size="small" sx={{ backgroundColor: "#dcfce7", color: "#166534", fontWeight: 700 }} />
+                    <Typography variant="h6" sx={{ color: "#059669", fontWeight: 700 }}>
+                      {sec.title}
+                    </Typography>
+                    <Chip
+                      label={list.length}
+                      size="small"
+                      sx={{ backgroundColor: "#dcfce7", color: "#166534", fontWeight: 700 }}
+                    />
                   </Box>
                   <Grid container spacing={2}>
                     {list.map((task) => (
@@ -1169,16 +1213,11 @@ function UserTaskDashboard({ user }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-          <Pagination
-            count={totalPages}
-            page={page}
-            onChange={(_, newPage) => setPage(newPage)}
-            color="primary"
-          />
+          <Pagination count={totalPages} page={page} onChange={(_, newPage) => setPage(newPage)} color="primary" />
         </Box>
       )}
     </Box>
-  );
+  )
 
   if (loading) {
     return (
@@ -1189,25 +1228,23 @@ function UserTaskDashboard({ user }) {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          background:
-            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         }}
       >
         <CircularProgress sx={{ color: "#059669" }} />
       </Box>
-    );
+    )
   }
 
   if (!currentUser || !currentUser?.id) {
-    return null;
+    return null
   }
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         p: 3,
       }}
     >
@@ -1218,8 +1255,7 @@ function UserTaskDashboard({ user }) {
           borderRadius: 3,
           width: "100%",
           backgroundColor: "#ffffff",
-          boxShadow:
-            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
@@ -1314,9 +1350,7 @@ function UserTaskDashboard({ user }) {
                   ? "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)"
                   : "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)",
               borderBottom:
-                dialogMode === "view"
-                  ? "1px solid rgba(20, 184, 166, 0.2)"
-                  : "1px solid rgba(6, 95, 70, 0.1)",
+                dialogMode === "view" ? "1px solid rgba(20, 184, 166, 0.2)" : "1px solid rgba(6, 95, 70, 0.1)",
               color: dialogMode === "view" ? "#ffffff" : "#059669",
               fontWeight: 700,
               fontSize: "1.5rem",
@@ -1358,10 +1392,7 @@ function UserTaskDashboard({ user }) {
                     }}
                   >
                     <InfoIcon sx={{ color: "#ec4899" }} />
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "#ec4899", fontWeight: 600 }}
-                    >
+                    <Typography variant="h6" sx={{ color: "#ec4899", fontWeight: 600 }}>
                       Task Information
                     </Typography>
                   </Box>
@@ -1413,9 +1444,7 @@ function UserTaskDashboard({ user }) {
                         minHeight: "60px",
                       }}
                     >
-                      <Typography variant="body1">
-                        {selectedTask.description || "No description provided"}
-                      </Typography>
+                      <Typography variant="body1">{selectedTask.description || "No description provided"}</Typography>
                     </Box>
                   </Box>
                 </Box>
@@ -1432,10 +1461,7 @@ function UserTaskDashboard({ user }) {
                       }}
                     >
                       {getTaskSourceInfo(selectedTask).icon}
-                      <Typography
-                        variant="h6"
-                        sx={{ color: "#059669", fontWeight: 600 }}
-                      >
+                      <Typography variant="h6" sx={{ color: "#059669", fontWeight: 600 }}>
                         Assignment Information
                       </Typography>
                     </Box>
@@ -1443,11 +1469,8 @@ function UserTaskDashboard({ user }) {
                     <Box
                       sx={{
                         p: 3,
-                        backgroundColor:
-                          getTaskSourceInfo(selectedTask).color.bg,
-                        border: `2px solid ${
-                          getTaskSourceInfo(selectedTask).color.text
-                        }`,
+                        backgroundColor: getTaskSourceInfo(selectedTask).color.bg,
+                        border: `2px solid ${getTaskSourceInfo(selectedTask).color.text}`,
                         borderRadius: 2,
                       }}
                     >
@@ -1475,10 +1498,7 @@ function UserTaskDashboard({ user }) {
                     }}
                   >
                     <FlagIcon sx={{ color: "#ec4899" }} />
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "#ec4899", fontWeight: 600 }}
-                    >
+                    <Typography variant="h6" sx={{ color: "#ec4899", fontWeight: 600 }}>
                       Status & Priority
                     </Typography>
                   </Box>
@@ -1488,20 +1508,15 @@ function UserTaskDashboard({ user }) {
                       <Box
                         sx={{
                           p: 2,
-                          backgroundColor: getPriorityCardColor(
-                            selectedTask.priority
-                          ).bg,
-                          border: `2px solid ${
-                            getPriorityCardColor(selectedTask.priority).border
-                          }`,
+                          backgroundColor: getPriorityCardColor(selectedTask.priority).bg,
+                          border: `2px solid ${getPriorityCardColor(selectedTask.priority).border}`,
                           borderRadius: 2,
                         }}
                       >
                         <Typography
                           variant="caption"
                           sx={{
-                            color: getPriorityCardColor(selectedTask.priority)
-                              .text,
+                            color: getPriorityCardColor(selectedTask.priority).text,
                             fontWeight: 600,
                             mb: 1,
                             display: "block",
@@ -1512,8 +1527,7 @@ function UserTaskDashboard({ user }) {
                         <Typography
                           variant="h6"
                           sx={{
-                            color: getPriorityCardColor(selectedTask.priority)
-                              .text,
+                            color: getPriorityCardColor(selectedTask.priority).text,
                             fontWeight: 600,
                             textTransform: "capitalize",
                           }}
@@ -1527,12 +1541,8 @@ function UserTaskDashboard({ user }) {
                       <Box
                         sx={{
                           p: 2,
-                          backgroundColor: getStatusCardColor(
-                            selectedTask.status
-                          ).bg,
-                          border: `2px solid ${
-                            getStatusCardColor(selectedTask.status).border
-                          }`,
+                          backgroundColor: getStatusCardColor(selectedTask.status).bg,
+                          border: `2px solid ${getStatusCardColor(selectedTask.status).border}`,
                           borderRadius: 2,
                         }}
                       >
@@ -1555,10 +1565,7 @@ function UserTaskDashboard({ user }) {
                             textTransform: "capitalize",
                           }}
                         >
-                          {normalizeStatus(selectedTask.status).replace(
-                            "-",
-                            " "
-                          )}
+                          {normalizeStatus(selectedTask.status).replace("-", " ")}
                         </Typography>
                       </Box>
                     </Grid>
@@ -1576,10 +1583,7 @@ function UserTaskDashboard({ user }) {
                     }}
                   >
                     <TimelineIcon sx={{ color: "#ec4899" }} />
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "#ec4899", fontWeight: 600 }}
-                    >
+                    <Typography variant="h6" sx={{ color: "#ec4899", fontWeight: 600 }}>
                       Timeline & Details
                     </Typography>
                   </Box>
@@ -1605,14 +1609,9 @@ function UserTaskDashboard({ user }) {
                         >
                           📅 DUE DATE
                         </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#be185d", fontWeight: 600 }}
-                        >
+                        <Typography variant="h6" sx={{ color: "#be185d", fontWeight: 600 }}>
                           {selectedTask.dueDate
-                            ? new Date(selectedTask.dueDate).toLocaleDateString(
-                                "en-GB"
-                              )
+                            ? new Date(selectedTask.dueDate).toLocaleDateString("en-GB")
                             : "No due date"}
                         </Typography>
                       </Box>
@@ -1638,10 +1637,7 @@ function UserTaskDashboard({ user }) {
                         >
                           ⏱️ ESTIMATED TIME
                         </Typography>
-                        <Typography
-                          variant="h6"
-                          sx={{ color: "#166534", fontWeight: 600 }}
-                        >
+                        <Typography variant="h6" sx={{ color: "#166534", fontWeight: 600 }}>
                           {formatEstimatedTime(selectedTask.estimatedHours)}
                         </Typography>
                       </Box>
@@ -1661,10 +1657,7 @@ function UserTaskDashboard({ user }) {
                       }}
                     >
                       <LabelIcon sx={{ color: "#f59e0b" }} />
-                      <Typography
-                        variant="h6"
-                        sx={{ color: "#f59e0b", fontWeight: 600 }}
-                      >
+                      <Typography variant="h6" sx={{ color: "#f59e0b", fontWeight: 600 }}>
                         Tags
                       </Typography>
                     </Box>
@@ -1697,10 +1690,7 @@ function UserTaskDashboard({ user }) {
                     }}
                   >
                     <ChatIcon sx={{ color: "#14b8a6" }} />
-                    <Typography
-                      variant="h6"
-                      sx={{ color: "#14b8a6", fontWeight: 600 }}
-                    >
+                    <Typography variant="h6" sx={{ color: "#14b8a6", fontWeight: 600 }}>
                       Comments ({selectedTask.comments?.length || 0})
                     </Typography>
                   </Box>
@@ -1733,25 +1723,17 @@ function UserTaskDashboard({ user }) {
                                 width: 32,
                                 height: 32,
                                 fontSize: "0.875rem",
-                                background:
-                                  "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                                background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
                               }}
                             >
                               {comment.author?.firstName?.[0]}
                               {comment.author?.lastName?.[0]}
                             </Avatar>
                             <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 500, color: "#374151" }}
-                              >
-                                {comment.author?.firstName}{" "}
-                                {comment.author?.lastName}
+                              <Typography variant="body2" sx={{ fontWeight: 500, color: "#374151" }}>
+                                {comment.author?.firstName} {comment.author?.lastName}
                               </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
+                              <Typography variant="caption" color="text.secondary">
                                 {new Date(comment.createdAt).toLocaleString()}
                               </Typography>
                             </Box>
@@ -1804,21 +1786,13 @@ function UserTaskDashboard({ user }) {
                       variant="contained"
                       onClick={handleAddComment}
                       disabled={!newComment.trim() || commentLoading}
-                      startIcon={
-                        commentLoading ? (
-                          <CircularProgress size={16} />
-                        ) : (
-                          <CommentIcon />
-                        )
-                      }
+                      startIcon={commentLoading ? <CircularProgress size={16} /> : <CommentIcon />}
                       sx={{
-                        background:
-                          "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
+                        background: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
                         fontWeight: 600,
                         borderRadius: 2,
                         "&:hover": {
-                          background:
-                            "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
+                          background: "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
                           boxShadow: "0 10px 25px -5px rgba(20, 184, 166, 0.3)",
                         },
                       }}
@@ -1835,14 +1809,10 @@ function UserTaskDashboard({ user }) {
                   fullWidth
                   label="Title *"
                   value={taskForm.title}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, title: e.target.value })
-                  }
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
                   margin="normal"
                   required
-                  disabled={
-                    dialogMode === "edit" && !selectedTask?.isSelfCreated
-                  }
+                  disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
@@ -1857,15 +1827,11 @@ function UserTaskDashboard({ user }) {
                   fullWidth
                   label="Description"
                   value={taskForm.description}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, description: e.target.value })
-                  }
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                   margin="normal"
                   multiline
                   rows={3}
-                  disabled={
-                    dialogMode === "edit" && !selectedTask?.isSelfCreated
-                  }
+                  disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
@@ -1875,6 +1841,33 @@ function UserTaskDashboard({ user }) {
                     "& .MuiInputLabel-root.Mui-focused": { color: "#059669" },
                   }}
                 />
+                {/* after the Description TextField, add the Enhance with AI button */}
+                <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                  <Tooltip title="Use AI to improve and structure your description">
+                    <span>
+                      <Button
+                        variant="outlined"
+                        onClick={handleEnhanceDescription}
+                        disabled={
+                          enhancing ||
+                          !taskForm?.description?.trim() ||
+                          (dialogMode === "edit" && !selectedTask?.isSelfCreated)
+                        }
+                        startIcon={enhancing ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 600,
+                          borderColor: "#059669",
+                          color: "#065f46",
+                          "&:hover": { borderColor: "#047857", backgroundColor: "#ecfdf5" },
+                        }}
+                      >
+                        {enhancing ? "Enhancing..." : "Enhance with AI"}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </Box>
 
                 <Grid container spacing={2}>
                   <Grid item xs={6}>
@@ -1896,12 +1889,8 @@ function UserTaskDashboard({ user }) {
                       <Select
                         value={taskForm.priority}
                         label="Priority"
-                        onChange={(e) =>
-                          setTaskForm({ ...taskForm, priority: e.target.value })
-                        }
-                        disabled={
-                          dialogMode === "edit" && !selectedTask?.isSelfCreated
-                        }
+                        onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}
+                        disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                       >
                         <MenuItem value="low">
                           <Box
@@ -1911,12 +1900,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              label="Low"
-                              color="success"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip label="Low" color="success" size="small" sx={{ mr: 1 }} />
                             Low Priority
                           </Box>
                         </MenuItem>
@@ -1928,12 +1912,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              label="Medium"
-                              color="warning"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip label="Medium" color="warning" size="small" sx={{ mr: 1 }} />
                             Medium Priority
                           </Box>
                         </MenuItem>
@@ -1945,12 +1924,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              label="High"
-                              color="error"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip label="High" color="error" size="small" sx={{ mr: 1 }} />
                             High Priority
                           </Box>
                         </MenuItem>
@@ -1962,12 +1936,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              label="Urgent"
-                              color="error"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip label="Urgent" color="error" size="small" sx={{ mr: 1 }} />
                             Urgent Priority
                           </Box>
                         </MenuItem>
@@ -1994,9 +1963,7 @@ function UserTaskDashboard({ user }) {
                       <Select
                         value={taskForm.status}
                         label="Status"
-                        onChange={(e) =>
-                          setTaskForm({ ...taskForm, status: e.target.value })
-                        }
+                        onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}
                       >
                         <MenuItem value="pending">
                           <Box
@@ -2006,13 +1973,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              icon={<ScheduleIcon />}
-                              label="Pending"
-                              color="default"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip icon={<ScheduleIcon />} label="Pending" color="default" size="small" sx={{ mr: 1 }} />
                             Pending
                           </Box>
                         </MenuItem>
@@ -2060,13 +2021,7 @@ function UserTaskDashboard({ user }) {
                               gap: 1,
                             }}
                           >
-                            <Chip
-                              icon={<CancelIcon />}
-                              label="Cancelled"
-                              color="error"
-                              size="small"
-                              sx={{ mr: 1 }}
-                            />
+                            <Chip icon={<CancelIcon />} label="Cancelled" color="error" size="small" sx={{ mr: 1 }} />
                             Cancelled
                           </Box>
                         </MenuItem>
@@ -2082,14 +2037,10 @@ function UserTaskDashboard({ user }) {
                       label="Due Date"
                       type="date"
                       value={taskForm.dueDate}
-                      onChange={(e) =>
-                        setTaskForm({ ...taskForm, dueDate: e.target.value })
-                      }
+                      onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                       margin="normal"
                       InputLabelProps={{ shrink: true }}
-                      disabled={
-                        dialogMode === "edit" && !selectedTask?.isSelfCreated
-                      }
+                      disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                       // 🔧 ADD THIS LINE: Restrict to today and future dates only
                       inputProps={{
                         min: new Date().toISOString().split("T")[0],
@@ -2141,8 +2092,7 @@ function UserTaskDashboard({ user }) {
                               display: "block",
                             }}
                           >
-                            ⏰ Task due today: You have{" "}
-                            {getRemainingHoursToday().hours}h{" "}
+                            ⏰ Task due today: You have {getRemainingHoursToday().hours}h{" "}
                             {getRemainingHoursToday().minutes}m left
                           </Typography>
                         </Box>
@@ -2167,13 +2117,9 @@ function UserTaskDashboard({ user }) {
                               display: "block",
                             }}
                           >
-                            ❌ You don't have this much time left today!
-                            Maximum:{" "}
+                            ❌ You don't have this much time left today! Maximum:{" "}
                             {Math.floor(getRemainingHoursToday().total)}h{" "}
-                            {Math.round(
-                              (getRemainingHoursToday().total % 1) * 60
-                            )}
-                            m
+                            {Math.round((getRemainingHoursToday().total % 1) * 60)}m
                           </Typography>
                         </Box>
                       )}
@@ -2184,49 +2130,34 @@ function UserTaskDashboard({ user }) {
                           p: 2,
                           borderRadius: 2,
                           backgroundColor: "#f8fafc",
-                          border: exceedsRemainingTime()
-                            ? "2px solid #ef4444"
-                            : "2px solid #e2e8f0",
+                          border: exceedsRemainingTime() ? "2px solid #ef4444" : "2px solid #e2e8f0",
                           "&:hover": {
-                            borderColor: exceedsRemainingTime()
-                              ? "#ef4444"
-                              : "#059669",
+                            borderColor: exceedsRemainingTime() ? "#ef4444" : "#059669",
                           },
                         }}
                       >
                         <Grid container spacing={2} alignItems="center">
                           <Grid item xs={5}>
                             <FormControl fullWidth size="small">
-                              <InputLabel
-                                sx={{ color: "#059669", fontSize: "0.75rem" }}
-                              >
-                                HOURS
-                              </InputLabel>
+                              <InputLabel sx={{ color: "#059669", fontSize: "0.75rem" }}>HOURS</InputLabel>
                               <Select
                                 value={taskForm.estimatedHours}
                                 label="HOURS"
                                 onChange={(e) => {
-                                  const newHours = e.target.value;
-                                  const newTotal =
-                                    newHours + taskForm.estimatedMinutes / 60;
+                                  const newHours = e.target.value
+                                  const newTotal = newHours + taskForm.estimatedMinutes / 60
 
                                   // 🔧 NEW: Validate against remaining time if today
-                                  if (
-                                    isSelectedDateToday() &&
-                                    newTotal > getRemainingHoursToday().total
-                                  ) {
-                                    return; // Don't update if it would exceed remaining time
+                                  if (isSelectedDateToday() && newTotal > getRemainingHoursToday().total) {
+                                    return // Don't update if it would exceed remaining time
                                   }
 
                                   setTaskForm({
                                     ...taskForm,
                                     estimatedHours: newHours,
-                                  });
+                                  })
                                 }}
-                                disabled={
-                                  dialogMode === "edit" &&
-                                  !selectedTask?.isSelfCreated
-                                }
+                                disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                                 sx={{
                                   backgroundColor: "#ffffff",
                                   borderRadius: 1,
@@ -2241,8 +2172,7 @@ function UserTaskDashboard({ user }) {
                                   // 🔧 NEW: Disable hours that would exceed remaining time
                                   const wouldExceed =
                                     isSelectedDateToday() &&
-                                    hour + taskForm.estimatedMinutes / 60 >
-                                      getRemainingHoursToday().total;
+                                    hour + taskForm.estimatedMinutes / 60 > getRemainingHoursToday().total
 
                                   return (
                                     <MenuItem
@@ -2253,7 +2183,7 @@ function UserTaskDashboard({ user }) {
                                     >
                                       {hour.toString().padStart(2, "0")}
                                     </MenuItem>
-                                  );
+                                  )
                                 })}
                               </Select>
                             </FormControl>
@@ -2274,36 +2204,25 @@ function UserTaskDashboard({ user }) {
 
                           <Grid item xs={5}>
                             <FormControl fullWidth size="small">
-                              <InputLabel
-                                sx={{ color: "#059669", fontSize: "0.75rem" }}
-                              >
-                                MINUTES
-                              </InputLabel>
+                              <InputLabel sx={{ color: "#059669", fontSize: "0.75rem" }}>MINUTES</InputLabel>
                               <Select
                                 value={taskForm.estimatedMinutes}
                                 label="MINUTES"
                                 onChange={(e) => {
-                                  const newMinutes = e.target.value;
-                                  const newTotal =
-                                    taskForm.estimatedHours + newMinutes / 60;
+                                  const newMinutes = e.target.value
+                                  const newTotal = taskForm.estimatedHours + newMinutes / 60
 
                                   // 🔧 NEW: Validate against remaining time if today
-                                  if (
-                                    isSelectedDateToday() &&
-                                    newTotal > getRemainingHoursToday().total
-                                  ) {
-                                    return; // Don't update if it would exceed remaining time
+                                  if (isSelectedDateToday() && newTotal > getRemainingHoursToday().total) {
+                                    return // Don't update if it would exceed remaining time
                                   }
 
                                   setTaskForm({
                                     ...taskForm,
                                     estimatedMinutes: newMinutes,
-                                  });
+                                  })
                                 }}
-                                disabled={
-                                  dialogMode === "edit" &&
-                                  !selectedTask?.isSelfCreated
-                                }
+                                disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                                 sx={{
                                   backgroundColor: "#ffffff",
                                   borderRadius: 1,
@@ -2318,8 +2237,7 @@ function UserTaskDashboard({ user }) {
                                   // 🔧 NEW: Disable minutes that would exceed remaining time
                                   const wouldExceed =
                                     isSelectedDateToday() &&
-                                    taskForm.estimatedHours + minute / 60 >
-                                      getRemainingHoursToday().total;
+                                    taskForm.estimatedHours + minute / 60 > getRemainingHoursToday().total
 
                                   return (
                                     <MenuItem
@@ -2330,7 +2248,7 @@ function UserTaskDashboard({ user }) {
                                     >
                                       {minute.toString().padStart(2, "0")}
                                     </MenuItem>
-                                  );
+                                  )
                                 })}
                               </Select>
                             </FormControl>
@@ -2361,14 +2279,10 @@ function UserTaskDashboard({ user }) {
                   fullWidth
                   label="Tags (comma separated)"
                   value={taskForm.tags}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, tags: e.target.value })
-                  }
+                  onChange={(e) => setTaskForm({ ...taskForm, tags: e.target.value })}
                   margin="normal"
                   helperText="e.g. personal, urgent, learning"
-                  disabled={
-                    dialogMode === "edit" && !selectedTask?.isSelfCreated
-                  }
+                  disabled={dialogMode === "edit" && !selectedTask?.isSelfCreated}
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,
@@ -2396,14 +2310,12 @@ function UserTaskDashboard({ user }) {
                 onClick={() => setOpenDialog(false)}
                 variant="contained"
                 sx={{
-                  background:
-                    "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
+                  background: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
                   fontWeight: 600,
                   borderRadius: 2,
                   px: 4,
                   "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
+                    background: "linear-gradient(135deg, #0d9488 0%, #0f766e 100%)",
                     boxShadow: "0 10px 25px -5px rgba(20, 184, 166, 0.3)",
                   },
                 }}
@@ -2435,22 +2347,18 @@ function UserTaskDashboard({ user }) {
                 onClick={handleSubmitTask}
                 disabled={!taskForm.title}
                 sx={{
-                  background:
-                    "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                  background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
                   fontWeight: 600,
                   borderRadius: 2,
                   px: 3,
                   "&:hover": {
-                    background:
-                      "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                    background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                     boxShadow: "0 10px 25px -5px rgba(5, 150, 105, 0.3)",
                   },
                   "&:disabled": { background: "#d1d5db", color: "#9ca3af" },
                 }}
               >
-                {dialogMode === "create"
-                  ? "Create Personal Task"
-                  : "Update Task"}
+                {dialogMode === "create" ? "Create Personal Task" : "Update Task"}
               </Button>
             </DialogActions>
           )}
@@ -2471,10 +2379,7 @@ function UserTaskDashboard({ user }) {
             <Typography variant="body1" sx={{ mb: 2 }}>
               Are you sure you want to delete this task?
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 600, color: "#374151" }}
-            >
+            <Typography variant="body2" sx={{ fontWeight: 600, color: "#374151" }}>
               "{taskToDelete?.title}"
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -2496,7 +2401,7 @@ function UserTaskDashboard({ user }) {
         </Dialog>
       </Paper>
     </Box>
-  );
+  )
 }
 
-export default UserTaskDashboard;
+export default UserTaskDashboard

@@ -27,13 +27,13 @@ import {
   Pagination,
   Grid,
   Card,
-  CardContent,
   Tooltip,
   Avatar,
   Stack,
   Tab,
   Tabs,
   Badge,
+  CircularProgress,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -42,13 +42,13 @@ import {
   Cancel as CancelIcon,
   Schedule as ScheduleIcon,
   PlayArrow as PlayArrowIcon,
-  SupervisorAccount as ManagerIcon,
   Assignment as AssignmentIcon,
-  People as PeopleIcon,
   TrendingUp as TrendingUpIcon,
+  AutoFixHigh as AutoFixHighIcon,
 } from "@mui/icons-material";
 import API from "../../api";
 import { useNavigate } from "react-router-dom";
+import { enhanceTaskDescription } from "../../services/aiService";
 
 const priorityColors = {
   low: "success",
@@ -136,6 +136,8 @@ export default function ManagerTaskDashboard({ user }) {
   const [teamMembers, setTeamMembers] = useState([]);
   const [taskStats, setTaskStats] = useState(null);
   const [teamPerformance, setTeamPerformance] = useState([]);
+
+  const [enhancing, setEnhancing] = useState(false);
 
   const getRemainingHoursToday = () => {
     const now = new Date();
@@ -413,6 +415,31 @@ export default function ManagerTaskDashboard({ user }) {
     setDialogMode("edit");
     setOpenDialog(true);
   };
+
+  async function handleEnhanceDescription() {
+    try {
+      if (!taskForm?.description || !taskForm.description.trim()) {
+        window.alert("Please enter a description to enhance.");
+        return;
+      }
+      setEnhancing(true);
+      const res = await enhanceTaskDescription({
+        title: taskForm.title || "",
+        description: taskForm.description,
+      });
+      const enhanced = res?.enhancedDescription || "";
+      if (!enhanced) {
+        window.alert("AI enhancement did not return a result.");
+        return;
+      }
+      setTaskForm({ ...taskForm, description: enhanced });
+    } catch (err) {
+      console.error("[v0] AI enhance failed:", err);
+      window.alert("Unable to enhance description right now.");
+    } finally {
+      setEnhancing(false);
+    }
+  }
 
   const handleSubmitTask = async () => {
     try {
@@ -1087,6 +1114,37 @@ export default function ManagerTaskDashboard({ user }) {
                   "& .MuiInputLabel-root.Mui-focused": { color: "#059669" },
                 }}
               />
+              <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1 }}>
+                <Tooltip title="Use AI to improve and structure your description">
+                  <span>
+                    <Button
+                      variant="outlined"
+                      onClick={handleEnhanceDescription}
+                      disabled={enhancing || !taskForm?.description?.trim()}
+                      startIcon={
+                        enhancing ? (
+                          <CircularProgress size={16} />
+                        ) : (
+                          <AutoFixHighIcon />
+                        )
+                      }
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                        fontWeight: 600,
+                        borderColor: "#059669",
+                        color: "#065f46",
+                        "&:hover": {
+                          borderColor: "#047857",
+                          backgroundColor: "#ecfdf5",
+                        },
+                      }}
+                    >
+                      {enhancing ? "Enhancing..." : "Enhance with AI"}
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Box>
               <FormControl
                 fullWidth
                 margin="normal"
