@@ -215,28 +215,6 @@ For support and questions:
 - Check the documentation
 - Contact the development team
 
-## 🔄 Changelog
-
-### Version 1.3.0
-- Enhanced role-based permissions system
-- Improved session management
-- Added AI-powered task enhancements
-
-### Version 1.2.0
-- Multi-device session support
-- Performance optimizations
-- Bug fixes and improvements
-
-### Version 1.1.0
-- AI integration for task descriptions
-- Enhanced user interface
-- Additional task management features
-
-### Version 1.0.0
-- Initial release
-- Core task management functionality
-- User authentication and authorization
-
 ---
 
 **TaskFlow Frontend** - Modern, responsive interface for efficient task management.
