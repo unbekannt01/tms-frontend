@@ -1,39 +1,39 @@
-import axios from "axios";
-import { validateIfStale } from "./utils/SessionManager";
+import axios from "axios"
+import { validateIfStale } from "./utils/SessionManager"
 
 const API = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-});
+})
 
 // Attach both sessionId and JWT token if they exist
 API.interceptors.request.use((req) => {
   // Non-blocking preflight validation if last check is stale
-  validateIfStale(15000);
+  validateIfStale(15000)
 
-  const sessionId = localStorage.getItem("sessionId");
-  const accessToken = localStorage.getItem("accessToken");
+  const sessionId = localStorage.getItem("sessionId")
+  const accessToken = localStorage.getItem("accessToken")
 
   if (sessionId) {
-    req.headers["x-session-id"] = sessionId;
+    req.headers["x-session-id"] = sessionId
   }
 
   if (accessToken) {
-    req.headers["Authorization"] = `Bearer ${accessToken}`;
+    req.headers["Authorization"] = `Bearer ${accessToken}`
   }
 
-  return req;
-});
+  return req
+})
 
 // Handle both session and JWT token expiration
 API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      const errorCode = error.response?.data?.code;
-      const errorMessage = error.response?.data?.message || "";
+      const errorCode = error.response?.data?.code
+      const errorMessage = error.response?.data?.message || ""
 
       // Handle different types of 401 errors
       if (
@@ -45,39 +45,54 @@ API.interceptors.response.use(
         errorMessage.includes("expired")
       ) {
         // Clear all authentication data including JWT token
-        localStorage.removeItem("sessionId");
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("tokenExpiresAt");
-        localStorage.removeItem("user");
-        localStorage.removeItem("resetToken");
-        localStorage.removeItem("resetEmail");
-        localStorage.removeItem("loginTime");
+        localStorage.removeItem("sessionId")
+        localStorage.removeItem("accessToken")
+        localStorage.removeItem("tokenExpiresAt")
+        localStorage.removeItem("user")
+        localStorage.removeItem("resetToken")
+        localStorage.removeItem("resetEmail")
+        localStorage.removeItem("loginTime")
 
         // Only redirect if not already on login/auth pages
-        const currentPath = window.location.pathname;
-        const authPaths = [
-          "/login",
-          "/register",
-          "/forgot-password",
-          "/verify-otp",
-          "/reset-password",
-          "/",
-        ];
+        const currentPath = window.location.pathname
+        const authPaths = ["/login", "/register", "/forgot-password", "/verify-otp", "/reset-password", "/"]
 
         if (!authPaths.includes(currentPath)) {
           const reason =
-            errorMessage.includes("JWT") || errorMessage.includes("token")
-              ? "token_expired"
-              : "session_expired";
+            errorMessage.includes("JWT") || errorMessage.includes("token") ? "token_expired" : "session_expired"
 
           setTimeout(() => {
-            window.location.href = `/login?reason=${reason}`;
-          }, 500);
+            window.location.href = `/login?reason=${reason}`
+          }, 500)
         }
       }
     }
-    return Promise.reject(error);
-  }
-);
+    return Promise.reject(error)
+  },
+)
 
-export default API;
+// Avatar API functions
+export const avatarAPI = {
+  // Upload or update avatar
+  uploadAvatar: (file) => {
+    const formData = new FormData()
+    formData.append("avatar", file)
+    return API.post("/users/avatar", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+  },
+
+  // Get user avatar by userId
+  getAvatar: (userId) => {
+    return API.get(`/users/avatar/${userId}`)
+  },
+
+  // Delete current user's avatar
+  deleteAvatar: () => {
+    return API.delete("/users/avatar")
+  },
+}
+
+export default API

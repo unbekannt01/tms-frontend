@@ -24,7 +24,11 @@ import Profile from "./Page/Profile";
 import AdminTaskDashboard from "./Page/TaskDashboards/AdminTaskDashboard";
 import ManagerTaskDashboard from "./Page/TaskDashboards/ManagerTaskDashboard";
 import UserTaskDashboard from "./Page/TaskDashboards/UserTaskDashboard";
-import { handleAppFocus, validateSessionNow, validateIfStale } from "./utils/SessionManager";
+import {
+  handleAppFocus,
+  validateSessionNow,
+  validateIfStale,
+} from "./utils/SessionManager";
 import UserManagement from "./Page/UserManagement";
 import ThankYou from "./Page/ThankYou";
 
