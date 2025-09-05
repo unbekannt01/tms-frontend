@@ -12,10 +12,10 @@ import {
   Link,
   Container,
   Collapse,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  // Dialog,
+  // DialogTitle,
+  // DialogContent,
+  // DialogActions,
 } from "@mui/material";
 import API from "../api";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -35,17 +35,30 @@ export default function Login() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false); // Commented out - no longer needed
 
   useEffect(() => {
+    // Check for session expiry message
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get("reason") === "session_expired") {
       setSessionExpiredMessage("Your session has expired. Please login again.");
     }
+
+    // Check for success message from password reset
+    if (location.state?.message) {
+      setError(""); // Clear any existing errors
+      setSessionExpiredMessage(location.state.message);
+    }
   }, [location]);
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    // Clear messages when user starts typing
+    if (error) setError("");
+    if (sessionExpiredMessage && !location.search.includes("session_expired")) {
+      setSessionExpiredMessage("");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,6 +71,7 @@ export default function Login() {
     try {
       const { data } = await API.post("/users/login", form);
 
+      // Store authentication data
       localStorage.setItem("sessionId", data.sessionId);
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("user", JSON.stringify(data.user));
@@ -67,8 +81,10 @@ export default function Login() {
         localStorage.setItem("tokenExpiresAt", data.tokenExpiresAt);
       }
 
+      // Start session monitoring
       startSessionMonitoring();
 
+      // Navigate based on user role
       const userRole = data.user.roleId.name;
       if (userRole === "admin") {
         navigate("/admin-dashboard");
@@ -78,6 +94,8 @@ export default function Login() {
         navigate("/dashboard");
       }
     } catch (err) {
+      console.error("Login error:", err);
+      
       if (
         err.response?.status === 401 &&
         err.response?.data?.code === "SESSION_LIMIT_EXCEEDED"
@@ -98,7 +116,7 @@ export default function Login() {
         setVerificationEmail(err.response.data.email);
         setShowVerification(true);
       } else {
-        setError(err.response?.data?.message || "Login failed");
+        setError(err.response?.data?.message || "Login failed. Please check your credentials.");
       }
     } finally {
       setLoading(false);
@@ -117,6 +135,7 @@ export default function Login() {
         "Verification email sent successfully! Please check your inbox."
       );
     } catch (err) {
+      console.error("Resend verification error:", err);
       setResendMessage(
         err.response?.data?.message || "Failed to send verification email"
       );
@@ -125,13 +144,19 @@ export default function Login() {
     }
   };
 
-  const handleClick = () => {
-    setOpen(true);
+  // ✅ Updated to redirect to forgot password page
+  const handleForgotPassword = () => {
+    navigate("/forgot-password");
   };
 
-  const handleClose = () => {
-    setOpen(false);
-  };
+  // ❌ Commented out dialog functions - no longer needed
+  // const handleClick = () => {
+  //   setOpen(true);
+  // };
+
+  // const handleClose = () => {
+  //   setOpen(false);
+  // };
 
   return (
     <Box
@@ -152,6 +177,7 @@ export default function Login() {
               mb: 3,
               color: "#059669",
               fontWeight: 500,
+              textTransform: "none",
               "&:hover": { backgroundColor: "#f0fdf4" },
             }}
           >
@@ -194,7 +220,7 @@ export default function Login() {
 
             {sessionExpiredMessage && (
               <Alert
-                severity="warning"
+                severity={location.state?.message ? "success" : "warning"}
                 sx={{
                   mb: 3,
                   borderRadius: 2,
@@ -282,15 +308,18 @@ export default function Login() {
                 margin="normal"
                 onChange={handleChange}
                 required
+                disabled={loading}
                 sx={{
                   mb: 2,
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
+                    backgroundColor: loading ? "#f3f4f6" : "#ffffff",
                     "&:hover .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#059669",
                     },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#059669",
+                      borderWidth: 2,
                     },
                   },
                   "& .MuiInputLabel-root.Mui-focused": {
@@ -308,15 +337,18 @@ export default function Login() {
                 margin="normal"
                 onChange={handleChange}
                 required
+                disabled={loading}
                 sx={{
                   mb: 3,
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
+                    backgroundColor: loading ? "#f3f4f6" : "#ffffff",
                     "&:hover .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#059669",
                     },
                     "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                       borderColor: "#059669",
+                      borderWidth: 2,
                     },
                   },
                   "& .MuiInputLabel-root.Mui-focused": {
@@ -330,7 +362,7 @@ export default function Login() {
                 variant="contained"
                 fullWidth
                 size="large"
-                disabled={loading}
+                disabled={loading || !form.emailOrUserName.trim() || !form.password.trim()}
                 sx={{
                   py: 1.5,
                   borderRadius: 2,
@@ -345,42 +377,76 @@ export default function Login() {
                     background:
                       "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                     boxShadow: "0 6px 8px -1px rgb(5 150 105 / 0.4)",
+                    transform: loading ? "none" : "translateY(-1px)",
                   },
                   "&:disabled": {
                     background: "#94a3b8",
                     boxShadow: "none",
+                    transform: "none",
                   },
+                  transition: "all 0.2s ease-in-out",
                 }}
               >
                 {loading ? (
-                  <CircularProgress size={24} color="inherit" />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <CircularProgress size={20} color="inherit" />
+                    <span>Signing In...</span>
+                  </Box>
                 ) : (
                   "Sign In"
                 )}
               </Button>
             </form>
 
-            <Box sx={{ textAlign: "center" }}>
+            <Box sx={{ textAlign: "center", display: "flex", justifyContent: "center", gap: 2 }}>
+              {/* ✅ Updated forgot password link to redirect */}
               <Link
                 component="button"
                 variant="body2"
-                onClick={handleClick}
+                onClick={handleForgotPassword}
+                disabled={loading}
                 sx={{
                   color: "#059669",
                   textDecoration: "none",
                   fontWeight: 500,
-                  "&:hover": { textDecoration: "underline" },
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.6 : 1,
+                  "&:hover": { 
+                    textDecoration: loading ? "none" : "underline",
+                  },
                 }}
               >
                 Forgot your password?
               </Link>
+              
+              <span style={{ color: "#e2e8f0" }}>|</span>
+              
+              <Link
+                component="button"
+                variant="body2"
+                onClick={() => navigate("/register")}
+                disabled={loading}
+                sx={{
+                  color: "#059669",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  opacity: loading ? 0.6 : 1,
+                  "&:hover": { 
+                    textDecoration: loading ? "none" : "underline",
+                  },
+                }}
+              >
+                Create account
+              </Link>
             </Box>
 
-            {/* Popup / Dialog */}
+            {/* ❌ Commented out dialog - no longer needed */}
+            {/* 
             <Dialog open={open} onClose={handleClose}>
               <DialogTitle>Password Reset</DialogTitle>
               <DialogContent>
-                  We’ve got some issues with this feature right now. Please try again later.
+                We've got some issues with this feature right now. Please try again later.
               </DialogContent>
               <DialogActions>
                 <Button onClick={handleClose} color="primary" autoFocus>
@@ -388,6 +454,7 @@ export default function Login() {
                 </Button>
               </DialogActions>
             </Dialog>
+            */}
           </Paper>
         </Box>
       </Container>
