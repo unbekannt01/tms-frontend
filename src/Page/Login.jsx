@@ -20,6 +20,7 @@ import {
 import API from "../api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { startSessionMonitoring } from "../utils/SessionManager";
+import ForgotPasswordPopup from "./ForgotPasswordPopup"; // import your popup
 
 export default function Login() {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ export default function Login() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
   const [emailServiceDialog, setEmailServiceDialog] = useState(false); // New state for popup
+  const [openPopup, setOpenPopup] = useState(false);
 
   useEffect(() => {
     // Check for session expiry message
@@ -95,7 +97,7 @@ export default function Login() {
       }
     } catch (err) {
       console.error("Login error:", err);
-      
+
       if (
         err.response?.status === 401 &&
         err.response?.data?.code === "SESSION_LIMIT_EXCEEDED"
@@ -116,7 +118,10 @@ export default function Login() {
         setVerificationEmail(err.response.data.email);
         setShowVerification(true);
       } else {
-        setError(err.response?.data?.message || "Login failed. Please check your credentials.");
+        setError(
+          err.response?.data?.message ||
+            "Login failed. Please check your credentials."
+        );
       }
     } finally {
       setLoading(false);
@@ -358,7 +363,11 @@ export default function Login() {
                 variant="contained"
                 fullWidth
                 size="large"
-                disabled={loading || !form.emailOrUserName.trim() || !form.password.trim()}
+                disabled={
+                  loading ||
+                  !form.emailOrUserName.trim() ||
+                  !form.password.trim()
+                }
                 sx={{
                   py: 1.5,
                   borderRadius: 2,
@@ -394,12 +403,18 @@ export default function Login() {
               </Button>
             </form>
 
-            <Box sx={{ textAlign: "center", display: "flex", justifyContent: "center", gap: 2 }}>
-              {/* ✅ Updated forgot password link to show popup */}
+            <Box
+              sx={{
+                textAlign: "center",
+                display: "flex",
+                justifyContent: "center",
+                gap: 2,
+              }}
+            >
               <Link
                 component="button"
                 variant="body2"
-                onClick={handleForgotPassword}
+                onClick={() => setOpenPopup(true)}
                 disabled={loading}
                 sx={{
                   color: "#059669",
@@ -410,7 +425,7 @@ export default function Login() {
                   padding: "4px 8px",
                   borderRadius: 1,
                   transition: "all 0.2s ease-in-out",
-                  "&:hover": { 
+                  "&:hover": {
                     textDecoration: loading ? "none" : "underline",
                     backgroundColor: loading ? "transparent" : "#f0fdf4",
                     color: loading ? "#059669" : "#047857",
@@ -419,9 +434,14 @@ export default function Login() {
               >
                 Forgot your password?
               </Link>
-              
+
+              <ForgotPasswordPopup
+                open={openPopup}
+                onClose={() => setOpenPopup(false)}
+              />
+
               <span style={{ color: "#e2e8f0", alignSelf: "center" }}>|</span>
-              
+
               <Link
                 component="button"
                 variant="body2"
@@ -436,7 +456,7 @@ export default function Login() {
                   padding: "4px 8px",
                   borderRadius: 1,
                   transition: "all 0.2s ease-in-out",
-                  "&:hover": { 
+                  "&:hover": {
                     textDecoration: loading ? "none" : "underline",
                     backgroundColor: loading ? "transparent" : "#f0fdf4",
                     color: loading ? "#059669" : "#047857",
@@ -448,43 +468,50 @@ export default function Login() {
             </Box>
 
             {/* ✅ New funny email service dialog */}
-            <Dialog 
-              open={emailServiceDialog} 
+            <Dialog
+              open={emailServiceDialog}
               onClose={handleCloseEmailServiceDialog}
               maxWidth="sm"
               fullWidth
             >
-              <DialogTitle sx={{ 
-                textAlign: "center", 
-                fontWeight: 600,
-                color: "#dc2626",
-                fontSize: "1.25rem"
-              }}>
+              <DialogTitle
+                sx={{
+                  textAlign: "center",
+                  fontWeight: 600,
+                  color: "#dc2626",
+                  fontSize: "1.25rem",
+                }}
+              >
                 🚨 Houston, We Have a Problem! 🚨
               </DialogTitle>
               <DialogContent sx={{ textAlign: "center", py: 3 }}>
                 <Typography variant="body1" sx={{ mb: 2, fontSize: "1.1rem" }}>
-                  Our email service is currently having a <strong>heated argument</strong> with the mail server! 📧⚔️
+                  Our email service is currently having a{" "}
+                  <strong>heated argument</strong> with the mail server! 📧⚔️
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 2, color: "#6b7280" }}>
-                  Don't worry, our tech wizards are working around the clock 
+                  Don't worry, our tech wizards are working around the clock
                   (with lots of coffee ☕ and pizza 🍕) to get this sorted out.
                 </Typography>
-                <Typography variant="body2" sx={{ fontStyle: "italic", color: "#9ca3af" }}>
-                  In the meantime, try remembering your password or contact support! 
-                  We promise we'll have this fixed faster than you can say "password123"! 🔧
+                <Typography
+                  variant="body2"
+                  sx={{ fontStyle: "italic", color: "#9ca3af" }}
+                >
+                  In the meantime, try remembering your password or contact
+                  support! We promise we'll have this fixed faster than you can
+                  say "password123"! 🔧
                 </Typography>
               </DialogContent>
               <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
-                <Button 
-                  onClick={handleCloseEmailServiceDialog} 
+                <Button
+                  onClick={handleCloseEmailServiceDialog}
                   variant="contained"
                   sx={{
                     backgroundColor: "#059669",
                     "&:hover": { backgroundColor: "#047857" },
                     textTransform: "none",
                     fontWeight: 600,
-                    px: 4
+                    px: 4,
                   }}
                 >
                   Got it! 👍

@@ -20,6 +20,8 @@ import Sessions from "./Page/Session";
 import ForgotPassword from "./Page/ForgotPassword";
 import VerifyOtp from "./Page/VerifyOtp";
 import ResetPassword from "./Page/ResetPassword";
+import ResetWithBackupCode from "./Page/ResetWithBackupCode";
+import ResetWithSecurityQuestions from "./Page/ResetWithSecurityQuestions";
 import Profile from "./Page/Profile";
 import AdminTaskDashboard from "./Page/TaskDashboards/AdminTaskDashboard";
 import ManagerTaskDashboard from "./Page/TaskDashboards/ManagerTaskDashboard";
@@ -32,24 +34,29 @@ import {
 import UserManagement from "./Page/UserManagement";
 import ThankYou from "./Page/ThankYou";
 
-// Role-based Task Router
+// Public paths to skip session validation
+const publicPaths = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/verify-otp",
+  "/reset-password",
+  "/reset-backup-code",
+  "/reset-security-questions",
+  "/",
+];
+
+// Role-based task router
 const TaskRouter = () => {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = user?.role?.toLowerCase();
 
-  console.log("[v1] TaskRouter - User data:", user);
-  console.log("[v1] TaskRouter - Detected role:", userRole);
-
-  if (userRole === "admin") {
-    return <AdminTaskDashboard user={user} />;
-  } else if (userRole === "manager") {
-    return <ManagerTaskDashboard user={user} />;
-  } else {
-    return <UserTaskDashboard user={user} />;
-  }
+  if (userRole === "admin") return <AdminTaskDashboard user={user} />;
+  if (userRole === "manager") return <ManagerTaskDashboard user={user} />;
+  return <UserTaskDashboard user={user} />;
 };
 
-// Define routes
+// Routes
 const router = createBrowserRouter(
   [
     { path: "/", element: <Home /> },
@@ -68,7 +75,11 @@ const router = createBrowserRouter(
     { path: "/forgot-password", element: <ForgotPassword /> },
     { path: "/verify-otp", element: <VerifyOtp /> },
     { path: "/reset-password", element: <ResetPassword /> },
-    // { path: "/direct-reset-password", element: <DirectResetPassword /> },
+    { path: "/reset-backup-code", element: <ResetWithBackupCode /> },
+    {
+      path: "/reset-security-questions",
+      element: <ResetWithSecurityQuestions />,
+    },
     { path: "/profile", element: <Profile /> },
     { path: "/tasks", element: <TaskRouter /> },
     { path: "/admin-tasks", element: <AdminTaskDashboard /> },
@@ -86,23 +97,20 @@ const router = createBrowserRouter(
 
 export default function App() {
   useEffect(() => {
-    // Validate session immediately on app mount/refresh
-    validateSessionNow();
+    const currentPath = window.location.pathname;
 
-    // Handle app focus and visibility changes for session validation
+    // Only validate sessions for non-public pages
+    if (!publicPaths.includes(currentPath)) validateSessionNow();
+
     const handleFocus = () => {
-      handleAppFocus();
+      if (!publicPaths.includes(currentPath)) handleAppFocus();
     };
-
-    // Activity-driven lightweight validation
     const handleActivity = () => {
-      validateIfStale(15000);
+      if (!publicPaths.includes(currentPath)) validateIfStale(15000);
     };
-
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (!document.hidden && !publicPaths.includes(currentPath))
         handleAppFocus();
-      }
     };
 
     window.addEventListener("focus", handleFocus);
