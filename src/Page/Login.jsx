@@ -12,10 +12,10 @@ import {
   Link,
   Container,
   Collapse,
-  // Dialog,
-  // DialogTitle,
-  // DialogContent,
-  // DialogActions,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import API from "../api";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -35,7 +35,7 @@ export default function Login() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
-  // const [open, setOpen] = useState(false); // Commented out - no longer needed
+  const [emailServiceDialog, setEmailServiceDialog] = useState(false); // New state for popup
 
   useEffect(() => {
     // Check for session expiry message
@@ -144,19 +144,15 @@ export default function Login() {
     }
   };
 
-  // ✅ Updated to redirect to forgot password page
+  // ✅ Updated to show funny popup instead of redirecting
   const handleForgotPassword = () => {
-    navigate("/forgot-password");
+    setEmailServiceDialog(true);
   };
 
-  // ❌ Commented out dialog functions - no longer needed
-  // const handleClick = () => {
-  //   setOpen(true);
-  // };
-
-  // const handleClose = () => {
-  //   setOpen(false);
-  // };
+  // New function to close the email service dialog
+  const handleCloseEmailServiceDialog = () => {
+    setEmailServiceDialog(false);
+  };
 
   return (
     <Box
@@ -399,7 +395,7 @@ export default function Login() {
             </form>
 
             <Box sx={{ textAlign: "center", display: "flex", justifyContent: "center", gap: 2 }}>
-              {/* ✅ Updated forgot password link to redirect */}
+              {/* ✅ Updated forgot password link to show popup */}
               <Link
                 component="button"
                 variant="body2"
@@ -411,15 +407,20 @@ export default function Login() {
                   fontWeight: 500,
                   cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.6 : 1,
+                  padding: "4px 8px",
+                  borderRadius: 1,
+                  transition: "all 0.2s ease-in-out",
                   "&:hover": { 
                     textDecoration: loading ? "none" : "underline",
+                    backgroundColor: loading ? "transparent" : "#f0fdf4",
+                    color: loading ? "#059669" : "#047857",
                   },
                 }}
               >
                 Forgot your password?
               </Link>
               
-              <span style={{ color: "#e2e8f0" }}>|</span>
+              <span style={{ color: "#e2e8f0", alignSelf: "center" }}>|</span>
               
               <Link
                 component="button"
@@ -432,8 +433,13 @@ export default function Login() {
                   fontWeight: 500,
                   cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.6 : 1,
+                  padding: "4px 8px",
+                  borderRadius: 1,
+                  transition: "all 0.2s ease-in-out",
                   "&:hover": { 
                     textDecoration: loading ? "none" : "underline",
+                    backgroundColor: loading ? "transparent" : "#f0fdf4",
+                    color: loading ? "#059669" : "#047857",
                   },
                 }}
               >
@@ -441,20 +447,50 @@ export default function Login() {
               </Link>
             </Box>
 
-            {/* ❌ Commented out dialog - no longer needed */}
-            {/* 
-            <Dialog open={open} onClose={handleClose}>
-              <DialogTitle>Password Reset</DialogTitle>
-              <DialogContent>
-                We've got some issues with this feature right now. Please try again later.
+            {/* ✅ New funny email service dialog */}
+            <Dialog 
+              open={emailServiceDialog} 
+              onClose={handleCloseEmailServiceDialog}
+              maxWidth="sm"
+              fullWidth
+            >
+              <DialogTitle sx={{ 
+                textAlign: "center", 
+                fontWeight: 600,
+                color: "#dc2626",
+                fontSize: "1.25rem"
+              }}>
+                🚨 Houston, We Have a Problem! 🚨
+              </DialogTitle>
+              <DialogContent sx={{ textAlign: "center", py: 3 }}>
+                <Typography variant="body1" sx={{ mb: 2, fontSize: "1.1rem" }}>
+                  Our email service is currently having a <strong>heated argument</strong> with the mail server! 📧⚔️
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, color: "#6b7280" }}>
+                  Don't worry, our tech wizards are working around the clock 
+                  (with lots of coffee ☕ and pizza 🍕) to get this sorted out.
+                </Typography>
+                <Typography variant="body2" sx={{ fontStyle: "italic", color: "#9ca3af" }}>
+                  In the meantime, try remembering your password or contact support! 
+                  We promise we'll have this fixed faster than you can say "password123"! 🔧
+                </Typography>
               </DialogContent>
-              <DialogActions>
-                <Button onClick={handleClose} color="primary" autoFocus>
-                  OK
+              <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
+                <Button 
+                  onClick={handleCloseEmailServiceDialog} 
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#059669",
+                    "&:hover": { backgroundColor: "#047857" },
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 4
+                  }}
+                >
+                  Got it! 👍
                 </Button>
               </DialogActions>
             </Dialog>
-            */}
           </Paper>
         </Box>
       </Container>

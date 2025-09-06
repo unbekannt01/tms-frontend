@@ -1,12 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Box, Paper, TextField, Button, Typography, Alert, CircularProgress } from "@mui/material"
-import API from "../api"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react";
+import {
+  Box,
+  Paper,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -14,27 +22,36 @@ export default function Register() {
     email: "",
     password: "",
     age: "",
-  })
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
-      await API.post("/users/v2/register", form)
-      localStorage.setItem("verificationEmail", form.email)
-      navigate("/email-verification")
+      // Updated to use /users/register endpoint
+      await API.post("/users/register", form);
+
+      // Updated to redirect to login instead of email verification
+      // Navigate to login with success message
+      navigate("/login", {
+        state: {
+          message:
+            "Registration successful! You can now sign in to your account.",
+        },
+      });
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed")
+      setError(err.response?.data?.message || "Registration failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Box
@@ -44,7 +61,8 @@ export default function Register() {
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        background:
+          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         py: 2,
       }}
     >
@@ -59,7 +77,8 @@ export default function Register() {
           maxHeight: "90vh",
           overflow: "auto",
           backgroundColor: "#ffffff",
-          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+          boxShadow:
+            "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
           border: "1px solid rgba(6, 95, 70, 0.1)",
         }}
       >
@@ -126,9 +145,18 @@ export default function Register() {
           {Object.keys(form).map((key) => (
             <TextField
               key={key}
-              label={key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1")}
+              label={
+                key.charAt(0).toUpperCase() +
+                key.slice(1).replace(/([A-Z])/g, " $1")
+              }
               name={key}
-              type={key === "password" ? "password" : key === "age" ? "number" : "text"}
+              type={
+                key === "password"
+                  ? "password"
+                  : key === "age"
+                  ? "number"
+                  : "text"
+              }
               value={form[key]}
               fullWidth
               margin="normal"
@@ -180,7 +208,11 @@ export default function Register() {
             }}
             disabled={loading}
           >
-            {loading ? <CircularProgress size={24} sx={{ color: "#ffffff" }} /> : "Create Account"}
+            {loading ? (
+              <CircularProgress size={24} sx={{ color: "#ffffff" }} />
+            ) : (
+              "Create Account"
+            )}
           </Button>
         </form>
 
@@ -199,10 +231,12 @@ export default function Register() {
               color: "#059669",
               textTransform: "none",
               fontWeight: 600,
-              p: 0,
+              p: "4px 8px",
               minWidth: "auto",
+              borderRadius: 1,
+              transition: "all 0.2s ease-in-out",
               "&:hover": {
-                backgroundColor: "transparent",
+                backgroundColor: "#f0fdf4",
                 color: "#047857",
               },
             }}
@@ -212,5 +246,5 @@ export default function Register() {
         </Typography>
       </Paper>
     </Box>
-  )
+  );
 }
