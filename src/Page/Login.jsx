@@ -21,6 +21,7 @@ import API from "../api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { startSessionMonitoring } from "../utils/SessionManager";
 import ForgotPasswordPopup from "./ForgotPasswordPopup"; // import your popup
+import SecuritySetupModal from "./SecuritySetupModal"; // NEW IMPORT
 
 export default function Login() {
   const navigate = useNavigate();
@@ -38,6 +39,10 @@ export default function Login() {
   const [resendMessage, setResendMessage] = useState("");
   const [emailServiceDialog, setEmailServiceDialog] = useState(false); // New state for popup
   const [openPopup, setOpenPopup] = useState(false);
+  
+  // NEW STATES FOR SECURITY SETUP
+  const [showSecuritySetup, setShowSecuritySetup] = useState(false);
+  const [loginData, setLoginData] = useState(null);
 
   useEffect(() => {
     // Check for session expiry message
@@ -86,15 +91,16 @@ export default function Login() {
       // Start session monitoring
       startSessionMonitoring();
 
-      // Navigate based on user role
-      const userRole = data.user.roleId.name;
-      if (userRole === "admin") {
-        navigate("/admin-dashboard");
-      } else if (userRole === "manager") {
-        navigate("/manager-dashboard");
-      } else {
-        navigate("/dashboard");
+      // NEW: CHECK FOR SECURITY SETUP REQUIREMENT
+      if (data.needsSecuritySetup) {
+        setLoginData(data);
+        setShowSecuritySetup(true);
+        return; // Don't navigate yet
       }
+
+      // Navigate based on user role (only if security setup not needed)
+      navigateToUserDashboard(data.user);
+
     } catch (err) {
       console.error("Login error:", err);
 
@@ -125,6 +131,34 @@ export default function Login() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // NEW: Navigate to user dashboard based on role
+  const navigateToUserDashboard = (user) => {
+    const userRole = user.roleId.name;
+    if (userRole === "admin") {
+      navigate("/admin-dashboard");
+    } else if (userRole === "manager") {
+      navigate("/manager-dashboard");
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  // NEW: Handle security setup completion
+  const handleSecuritySetupComplete = () => {
+    setShowSecuritySetup(false);
+    if (loginData) {
+      navigateToUserDashboard(loginData.user);
+    }
+  };
+
+  // NEW: Handle security setup skip/cancel
+  const handleSecuritySetupSkip = () => {
+    setShowSecuritySetup(false);
+    if (loginData) {
+      navigateToUserDashboard(loginData.user);
     }
   };
 
@@ -518,6 +552,13 @@ export default function Login() {
                 </Button>
               </DialogActions>
             </Dialog>
+
+            {/* NEW: Security Setup Modal */}
+            <SecuritySetupModal
+              open={showSecuritySetup}
+              onComplete={handleSecuritySetupComplete}
+              onSkip={handleSecuritySetupSkip}
+            />
           </Paper>
         </Box>
       </Container>

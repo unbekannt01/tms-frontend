@@ -95,4 +95,39 @@ export const avatarAPI = {
   deleteAvatar: () => API.delete("/users/avatar"),
 };
 
+// NEW: Security API helpers
+export const securityAPI = {
+  // Complete security setup (used in migration popup)
+  completeSecuritySetup: (securityQuestions) =>
+    API.post("/complete-security-setup", { securityQuestions }),
+
+  // Set security questions
+  setSecurityQuestions: (userId, securityQuestions) =>
+    API.post("/setSecurityQuestions", { userId, securityQuestions }),
+
+  // Get security questions for password reset
+  getSecurityQuestions: (email) =>
+    API.get(`/getSecurityQuestions?email=${email}`),
+
+  // Verify security answers
+  verifySecurityAnswers: (email, answers) =>
+    API.post("/verifySecurityAnswers", { email, answers }),
+
+  // Reset password with security questions
+  resetPasswordWithSecurityQuestions: (email, securityAnswers, newPassword) =>
+    API.post("/reset-password-with-security-answers", {
+      email,
+      securityAnswers,
+      newPassword,
+    }),
+
+  // Reset password with backup code
+  resetPasswordWithBackupCode: (email, code, newPassword) =>
+    API.post("/reset-password-with-backup-code", {
+      email,
+      code,
+      newPassword,
+    }),
+};
+
 export default API;
