@@ -58,6 +58,29 @@ export default function Home() {
   const handleClose = () => setOpenDialog(false);
   const handleOpen = () => setOpenDialog(true);
 
+  // Handle form submission
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+      // Submit to FormSubmit
+      await fetch("https://formsubmit.co/testing.buddy1111@gmail.com", {
+        method: "POST",
+        body: formData,
+      });
+
+      // Close dialog and navigate to thank you page
+      setOpenDialog(false);
+      navigate("/thank-you");
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      // Still navigate to thank you page as a fallback
+      setOpenDialog(false);
+      navigate("/thank-you");
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -257,13 +280,13 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            🌙 Our servers are catching some Z's right now, but don't worry - we're still here! 
-            Drop us a message and we'll get back to you faster than you can say "coffee break"! ☕✨
+            🌙 Our servers are catching some Z's right now, but don't worry -
+            we're still here! Drop us a message and we'll get back to you faster
+            than you can say "coffee break"! ☕✨
           </Typography>
 
           <form
-            action="https://formsubmit.co/testing.buddy1111@gmail.com"
-            method="POST"
+            onSubmit={handleFormSubmit}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -307,8 +330,8 @@ export default function Home() {
             <input type="hidden" name="_captcha" value="false" />
             <input
               type="hidden"
-              name="_next"
-              value={`${window.location.origin}/thank-you`}
+              name="_subject"
+              value="Message from TaskFlow - Server Nap Time!"
             />
 
             <Button
