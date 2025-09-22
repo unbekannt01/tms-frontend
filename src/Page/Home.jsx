@@ -17,7 +17,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [notice, setNotice] = useState(""); // ✅ state for announcement
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     fetch(`/config.json?ts=${Date.now()}`)
@@ -43,8 +43,12 @@ export default function Home() {
       setIsAuthenticated(true);
       startSessionMonitoring();
       navigate("/dashboard");
+    } else {
+      // ✅ Show popup automatically when user first visits
+      setTimeout(() => {
+        setOpenDialog(true);
+      }, 1500); // 1.5 second delay
     }
-    // ❌ Removed auto-popup logic - no longer shows popup automatically
   }, [navigate]);
 
   if (isAuthenticated) {
@@ -52,7 +56,7 @@ export default function Home() {
   }
 
   const handleClose = () => setOpenDialog(false);
-  const handleOpen = () => setOpenDialog(true); // ✅ allow manual open only
+  const handleOpen = () => setOpenDialog(true);
 
   return (
     <Box
@@ -67,7 +71,7 @@ export default function Home() {
       <Container maxWidth="sm">
         <Box className="fade-in" sx={{ textAlign: "center" }}>
           {/* ✅ Dynamic Notice Banner */}
-          {/* {notice && (
+          {notice && (
             <Paper
               elevation={2}
               sx={{
@@ -86,7 +90,7 @@ export default function Home() {
                 {notice}
               </Typography>
             </Paper>
-          )} */}
+          )}
 
           <Box sx={{ mb: 6 }}>
             <Typography
@@ -197,7 +201,7 @@ export default function Home() {
               </Button>
             </Box>
 
-            {/* ✅ Manual open button - only way to show popup */}
+            {/* ✅ Manual contact button */}
             <Button
               variant="text"
               size="small"
@@ -216,7 +220,7 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* ✅ Popup dialog - now only opens manually */}
+      {/* ✅ Popup Dialog - Auto shows on first visit */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -240,7 +244,7 @@ export default function Home() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          ⚡ Server's Caffeinated & Running Strong! ☕
+          😴 Server's Taking a Power Nap! ☕
         </DialogTitle>
 
         <DialogContent sx={{ mt: 1 }}>
@@ -253,9 +257,8 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            ✨ Great news! Our servers are fully powered up and running smoothly
-            till 19th September 2025! 🚀 But hey, if you need to reach out or
-            just want to say hi, drop us a message below! 💌
+            🌙 Our servers are catching some Z's right now, but don't worry - we're still here! 
+            Drop us a message and we'll get back to you faster than you can say "coffee break"! ☕✨
           </Typography>
 
           <form
@@ -325,11 +328,10 @@ export default function Home() {
                 },
               }}
             >
-              Send Your Message 🚀
+              Send Message 🚀
             </Button>
           </form>
 
-          {/* ✅ Updated note with coffee break backup */}
           <Typography
             sx={{
               mt: 3,
@@ -339,7 +341,7 @@ export default function Home() {
               fontStyle: "italic",
             }}
           >
-            Prefer direct contact? 📧 Email us at{" "}
+            📧 Or email us directly at{" "}
             <a
               href="mailto:testing.buddy1111@gmail.com"
               style={{
@@ -349,9 +351,9 @@ export default function Home() {
               }}
             >
               testing.buddy1111@gmail.com
-            </a>{" "}
-            📮 (Even when our servers take coffee breaks, we're always
-            listening! ☕)
+            </a>
+            <br />
+            💤 Even when servers sleep, we're always listening!
           </Typography>
         </DialogContent>
 
