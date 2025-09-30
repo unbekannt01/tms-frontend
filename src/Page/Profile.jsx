@@ -318,23 +318,6 @@ export default function Profile() {
           >
             ← Back to Dashboard
           </Button>
-          <Button
-            variant="outlined"
-            onClick={() => navigate("/sessions")}
-            sx={{
-              ml: 2,
-              mb: 2,
-              borderColor: "#059669",
-              color: "#059669",
-              fontWeight: 600,
-              "&:hover": {
-                borderColor: "#047857",
-                backgroundColor: "rgba(5, 150, 105, 0.04)",
-              },
-            }}
-          >
-            Active Devices
-          </Button>
         </Box>
 
         <Card
