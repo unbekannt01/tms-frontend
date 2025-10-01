@@ -97,21 +97,12 @@ export default function Profile() {
     // Validate file type
     if (!file.type.startsWith("image/")) {
       setAvatarError("Please select an image file");
-      setShowSizeWarning(false);
-      return;
-    }
-
-    // Validate file size (50KB)
-    if (file.size > 50 * 1024) {
-      setAvatarError("Image size should be less than 50KB");
-      setShowSizeWarning(true);
       return;
     }
 
     setAvatarLoading(true);
     setAvatarError("");
     setAvatarSuccess("");
-    setShowSizeWarning(false);
 
     try {
       const { data } = await avatarAPI.uploadAvatar(file);
@@ -318,23 +309,6 @@ export default function Profile() {
           >
             ← Back to Dashboard
           </Button>
-          <Button
-            variant="outlined"
-            onClick={() => navigate("/sessions")}
-            sx={{
-              ml: 2,
-              mb: 2,
-              borderColor: "#059669",
-              color: "#059669",
-              fontWeight: 600,
-              "&:hover": {
-                borderColor: "#047857",
-                backgroundColor: "rgba(5, 150, 105, 0.04)",
-              },
-            }}
-          >
-            Active Devices
-          </Button>
         </Box>
 
         <Card
@@ -398,29 +372,7 @@ export default function Profile() {
                   backgroundColor: "#fffbeb",
                   border: "1px solid #fed7aa",
                 }}
-              >
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Your image is too large! Please reduce the size to under 50KB.
-                </Typography>
-                <Typography variant="body2">
-                  You can compress your image here:{" "}
-                  <Link
-                    href="https://image.pi7.org/reduce-image-size-in-kb"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    sx={{
-                      color: "#d97706",
-                      fontWeight: 600,
-                      textDecoration: "underline",
-                      "&:hover": {
-                        color: "#b45309",
-                      },
-                    }}
-                  >
-                    Reduce Image Size Tool
-                  </Link>
-                </Typography>
-              </Alert>
+              ></Alert>
             )}
 
             <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -498,41 +450,10 @@ export default function Profile() {
                 )}
               </Box>
             </Box>
-
-            <Typography
-              variant="body2"
-              sx={{
-                mt: 2,
-                color: "#6b7280",
-              }}
-            >
-              Upload a profile picture. Max size: 50KB. Supported formats: JPG,
-              PNG, GIF
-            </Typography>
-
-            <Typography
-              variant="body2"
-              sx={{
-                mt: 1,
-                color: "#6b7280",
-              }}
-            >
-              Need to reduce image size?{" "}
-              <Link
-                href="https://image.pi7.org/reduce-image-size-in-kb"
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{
-                  color: "#059669",
-                  fontWeight: 500,
-                  textDecoration: "underline",
-                  "&:hover": {
-                    color: "#047857",
-                  },
-                }}
-              >
-                Use this free compression tool
-              </Link>
+            <Typography variant="body2" sx={{ mt: 2, color: "#6b7280" }}>
+              Upload a profile picture. Large images will be automatically
+              resized by the system. Supported formats: JPG/JPEG, PNG, GIF,
+              WEBP.
             </Typography>
           </CardContent>
         </Card>
