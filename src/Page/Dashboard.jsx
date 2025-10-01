@@ -1,72 +1,87 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Box, Paper, Typography, Button, CircularProgress, Chip, Card, CardContent, Grid, Avatar } from "@mui/material"
-import API from "../api"
-import { useNavigate } from "react-router-dom"
-import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
-import { disconnectSocket } from "../services/socket"
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Paper,
+  Typography,
+  Button,
+  CircularProgress,
+  Chip,
+  Card,
+  CardContent,
+  Grid,
+  Avatar,
+} from "@mui/material";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
+import {
+  startSessionMonitoring,
+  stopSessionMonitoring,
+} from "../utils/SessionManager";
+import { disconnectSocket } from "../services/socket";
+import DynamicAnnouncementSystem from "./DynamicAnnouncementSystem";
 
 export default function Dashboard() {
-  const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    const sessionId = localStorage.getItem("sessionId")
+    const userData = localStorage.getItem("user");
+    const sessionId = localStorage.getItem("sessionId");
 
     if (!userData || !sessionId) {
-      navigate("/login")
-      return
+      navigate("/login");
+      return;
     }
 
     try {
-      const parsedUser = JSON.parse(userData)
+      const parsedUser = JSON.parse(userData);
 
       if (parsedUser.roleId?.name === "admin") {
-        navigate("/admin-dashboard")
-        return
+        navigate("/admin-dashboard");
+        return;
       } else if (parsedUser.roleId?.name === "manager") {
-        navigate("/manager-dashboard")
-        return
+        navigate("/manager-dashboard");
+        return;
       }
 
-      setUser(parsedUser)
+      setUser(parsedUser);
 
       // Start session monitoring
-      startSessionMonitoring()
+      startSessionMonitoring();
     } catch (error) {
-      localStorage.clear()
-      navigate("/login")
-      return
+      localStorage.clear();
+      navigate("/login");
+      return;
     }
 
-    setLoading(false)
+    setLoading(false);
 
     return () => {
-      stopSessionMonitoring()
-    }
-  }, [navigate])
+      stopSessionMonitoring();
+    };
+  }, [navigate]);
 
   const logout = async () => {
     try {
-      await API.post("/users/logout")
+      await API.post("/users/logout");
     } catch (err) {
-      console.error("Logout failed", err)
+      console.error("Logout failed", err);
     } finally {
       try {
-        disconnectSocket()
+        disconnectSocket();
       } catch {}
-      stopSessionMonitoring()
-      localStorage.clear()
-      navigate("/")
+      stopSessionMonitoring();
+      localStorage.clear();
+      navigate("/");
     }
-  }
+  };
 
   const viewSessions = () => {
-    navigate("/sessions")
-  }
+    navigate("/sessions");
+  };
 
   if (loading) {
     return (
@@ -77,16 +92,17 @@ export default function Dashboard() {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         }}
       >
         <CircularProgress sx={{ color: "#059669" }} />
       </Box>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
@@ -94,11 +110,13 @@ export default function Dashboard() {
       sx={{
         width: "100vw",
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        background:
+          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         py: 4,
         px: 2,
       }}
     >
+      <DynamicAnnouncementSystem /> {/* Add this line */}
       <Box
         sx={{
           maxWidth: 800,
@@ -135,7 +153,8 @@ export default function Dashboard() {
                   border: "2px solid rgba(255, 255, 255, 0.3)",
                 }}
               >
-                {!user.avatar?.url && `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`}
+                {!user.avatar?.url &&
+                  `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`}
               </Avatar>
               <Typography
                 variant="h4"
@@ -164,7 +183,8 @@ export default function Dashboard() {
               fontSize: "1.1rem",
             }}
           >
-            {user.roleId?.description || "Ready to manage your tasks efficiently"}
+            {user.roleId?.description ||
+              "Ready to manage your tasks efficiently"}
           </Typography>
         </Paper>
 
@@ -175,7 +195,8 @@ export default function Dashboard() {
               sx={{
                 borderRadius: 3,
                 backgroundColor: "#ffffff",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                 border: "1px solid rgba(6, 95, 70, 0.1)",
               }}
             >
@@ -191,14 +212,23 @@ export default function Dashboard() {
                   Personal Information
                 </Typography>
                 <Box sx={{ space: 2 }}>
-                  <Typography variant="body1" sx={{ mb: 1.5, color: "#374151" }}>
-                    <strong style={{ color: "#1f2937" }}>Name:</strong> {user.firstName} {user.lastName}
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1.5, color: "#374151" }}
+                  >
+                    <strong style={{ color: "#1f2937" }}>Name:</strong>{" "}
+                    {user.firstName} {user.lastName}
                   </Typography>
-                  <Typography variant="body1" sx={{ mb: 1.5, color: "#374151" }}>
-                    <strong style={{ color: "#1f2937" }}>Username:</strong> {user.userName}
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1.5, color: "#374151" }}
+                  >
+                    <strong style={{ color: "#1f2937" }}>Username:</strong>{" "}
+                    {user.userName}
                   </Typography>
                   <Typography variant="body1" sx={{ color: "#374151" }}>
-                    <strong style={{ color: "#1f2937" }}>Email:</strong> {user.email}
+                    <strong style={{ color: "#1f2937" }}>Email:</strong>{" "}
+                    {user.email}
                   </Typography>
                 </Box>
               </CardContent>
@@ -211,7 +241,8 @@ export default function Dashboard() {
               sx={{
                 borderRadius: 3,
                 backgroundColor: "#ffffff",
-                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                boxShadow:
+                  "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                 border: "1px solid rgba(6, 95, 70, 0.1)",
               }}
             >
@@ -227,10 +258,17 @@ export default function Dashboard() {
                   Account Details
                 </Typography>
                 <Box sx={{ space: 2 }}>
-                  <Typography variant="body1" sx={{ mb: 1.5, color: "#374151" }}>
-                    <strong style={{ color: "#1f2937" }}>Role:</strong> {user.roleId?.name?.toUpperCase() || "USER"}
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1.5, color: "#374151" }}
+                  >
+                    <strong style={{ color: "#1f2937" }}>Role:</strong>{" "}
+                    {user.roleId?.name?.toUpperCase() || "USER"}
                   </Typography>
-                  <Typography variant="body1" sx={{ mb: 1.5, color: "#374151" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ mb: 1.5, color: "#374151" }}
+                  >
                     <strong style={{ color: "#1f2937" }}>Status:</strong>{" "}
                     <Chip
                       label="Active"
@@ -254,7 +292,8 @@ export default function Dashboard() {
             p: 4,
             borderRadius: 3,
             backgroundColor: "#ffffff",
-            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+            boxShadow:
+              "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
             border: "1px solid rgba(6, 95, 70, 0.1)",
           }}
         >
@@ -269,7 +308,9 @@ export default function Dashboard() {
             Quick Actions
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 2, mb: 3, justifyContent: "center" }}>
+          <Box
+            sx={{ display: "flex", gap: 2, mb: 3, justifyContent: "center" }}
+          >
             <Button
               variant="contained"
               onClick={() => navigate("/user-tasks")}
@@ -283,7 +324,8 @@ export default function Dashboard() {
                 fontWeight: 600,
                 textTransform: "none",
                 "&:hover": {
-                  background: "linear-gradient(135deg, #047857 0%, #065f46 100%)",
+                  background:
+                    "linear-gradient(135deg, #047857 0%, #065f46 100%)",
                   boxShadow: "0 6px 20px 0 rgba(5, 150, 105, 0.4)",
                   transform: "translateY(-1px)",
                 },
@@ -378,5 +420,5 @@ export default function Dashboard() {
         </Paper>
       </Box>
     </Box>
-  )
+  );
 }

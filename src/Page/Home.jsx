@@ -12,20 +12,21 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { startSessionMonitoring } from "../utils/SessionManager";
+import DynamicAnnouncementSystem from "./DynamicAnnouncementSystem";
 
 export default function Home() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
   const [notice, setNotice] = useState("");
+  const [showAnnouncements, setShowAnnouncements] = useState(false);
 
   useEffect(() => {
-    fetch(`/config.json?ts=${Date.now()}`)
-      .then((res) => res.json())
-      .then((data) => setNotice(data.notice))
-      .catch(() => {});
+    // fetch(`/config.json?ts=${Date.now()}`)
+    //   .then((res) => res.json())
+    //   .then((data) => setNotice(data.notice))
+    //   .catch(() => {});
 
-    // 🔹 Session check
     const user = localStorage.getItem("user");
     const sessionId = localStorage.getItem("sessionId");
     const accessToken = localStorage.getItem("accessToken");
@@ -39,15 +40,22 @@ export default function Home() {
           return;
         }
       }
-
       setIsAuthenticated(true);
       startSessionMonitoring();
       navigate("/dashboard");
-    } else {
-      // ✅ Show popup automatically when user first visits
-      setTimeout(() => {
+      return; // ✅ Don't show popup if user is authenticated
+    }
+
+    // ✨ AUTO-SHOW POPUP: Show server nap dialog once per session for non-authenticated users
+    const hasShownServerDialog = sessionStorage.getItem("hasShownServerDialog");
+    if (!hasShownServerDialog) {
+      // Show popup after a short delay for better UX
+      const timer = setTimeout(() => {
         setOpenDialog(true);
-      }, 1500); // 1.5 second delay
+        sessionStorage.setItem("hasShownServerDialog", "true");
+      }, 1500); // 1.5 seconds delay
+
+      return () => clearTimeout(timer);
     }
   }, [navigate]);
 
@@ -55,27 +63,34 @@ export default function Home() {
     return null;
   }
 
-  const handleClose = () => setOpenDialog(false);
-  const handleOpen = () => setOpenDialog(true);
+  // ✅ Fixed handlers
+  const handleClose = () => {
+    console.log("Closing dialog");
+    setOpenDialog(false);
+  };
+
+  const handleOpen = () => {
+    console.log("Opening dialog manually");
+    setOpenDialog(true);
+  };
+
+  // ✨ Announcement popup handlers
+  const handleAnnouncementOpen = () => setShowAnnouncements(true);
+  const handleAnnouncementClose = () => setShowAnnouncements(false);
 
   // Handle form submission
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-
     try {
-      // Submit to FormSubmit
       await fetch("https://formsubmit.co/testing.buddy1111@gmail.com", {
         method: "POST",
         body: formData,
       });
-
-      // Close dialog and navigate to thank you page
       setOpenDialog(false);
       navigate("/thank-you");
     } catch (error) {
       console.error("Error submitting form:", error);
-      // Still navigate to thank you page as a fallback
       setOpenDialog(false);
       navigate("/thank-you");
     }
@@ -91,9 +106,17 @@ export default function Home() {
         py: 4,
       }}
     >
+      {/* ✅ Show Announcement Dialog only when triggered */}
+      {showAnnouncements && (
+        <DynamicAnnouncementSystem
+          open={showAnnouncements}
+          onClose={handleAnnouncementClose}
+        />
+      )}
+
       <Container maxWidth="sm">
         <Box className="fade-in" sx={{ textAlign: "center" }}>
-          {/* ✅ Dynamic Notice Banner */}
+          {/* ✅ Keep notice as simple banner if it exists */}
           {notice && (
             <Paper
               elevation={2}
@@ -224,26 +247,52 @@ export default function Home() {
               </Button>
             </Box>
 
-            {/* ✅ Manual contact button */}
+            {/* ✨ Button to show announcements/updates */}
             <Button
               variant="text"
               size="small"
-              onClick={handleOpen}
+              onClick={handleAnnouncementOpen}
               sx={{
                 mt: 3,
                 textTransform: "none",
                 fontSize: "0.9rem",
                 color: "#64748b",
-                "&:hover": { color: "#059669" },
+                "&:hover": {
+                  color: "#059669",
+                  backgroundColor: "#f0fdf4",
+                },
+                cursor: "pointer",
+                userSelect: "none",
               }}
             >
-              Having issues? Click here to send us a message
+              🎉 What's New? See our latest features & upcoming updates!
+            </Button>
+
+            {/* ✅ Manual trigger button (still available if users want to reopen) */}
+            <Button
+              variant="text"
+              size="small"
+              onClick={handleOpen}
+              sx={{
+                mt: 1,
+                textTransform: "none",
+                fontSize: "0.85rem",
+                color: "#94a3b8",
+                "&:hover": {
+                  color: "#059669",
+                  backgroundColor: "#f0fdf4",
+                },
+                cursor: "pointer",
+                userSelect: "none",
+              }}
+            >
+              💤 Server status & contact info
             </Button>
           </Paper>
         </Box>
       </Container>
 
-      {/* ✅ Popup Dialog - Auto shows on first visit */}
+      {/* ✅ AUTO-POPUP: Server's Taking a Power Nap Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -269,7 +318,6 @@ export default function Home() {
         >
           😴 Server's Taking a Power Nap! ☕
         </DialogTitle>
-
         <DialogContent sx={{ mt: 1 }}>
           <Typography
             sx={{
@@ -284,7 +332,6 @@ export default function Home() {
             we're still here! Drop us a message and we'll get back to you faster
             than you can say "coffee break"! ☕✨
           </Typography>
-
           <form
             onSubmit={handleFormSubmit}
             style={{
@@ -309,7 +356,6 @@ export default function Home() {
               onFocus={(e) => (e.target.style.border = "1px solid #10b981")}
               onBlur={(e) => (e.target.style.border = "1px solid #e2e8f0")}
             />
-
             <textarea
               name="message"
               placeholder="Your Message"
@@ -326,14 +372,12 @@ export default function Home() {
               onFocus={(e) => (e.target.style.border = "1px solid #10b981")}
               onBlur={(e) => (e.target.style.border = "1px solid #e2e8f0")}
             />
-
             <input type="hidden" name="_captcha" value="false" />
             <input
               type="hidden"
               name="_subject"
               value="Message from TaskFlow - Server Nap Time!"
             />
-
             <Button
               type="submit"
               variant="contained"
@@ -354,7 +398,6 @@ export default function Home() {
               Send Message 🚀
             </Button>
           </form>
-
           <Typography
             sx={{
               mt: 3,
@@ -379,7 +422,6 @@ export default function Home() {
             💤 Even when servers sleep, we're always listening!
           </Typography>
         </DialogContent>
-
         <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
           <Button
             onClick={handleClose}
