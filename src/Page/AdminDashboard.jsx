@@ -23,6 +23,7 @@ import {
 import API from "../api"
 import { useNavigate } from "react-router-dom"
 import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
+import { disconnectSocket } from "../services/socket"
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -71,6 +72,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error("Logout failed", err)
     } finally {
+      try {
+        disconnectSocket()
+      } catch {}
       stopSessionMonitoring()
       localStorage.clear()
       navigate("/")
