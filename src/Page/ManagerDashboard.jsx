@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import {
   Box,
@@ -84,8 +82,7 @@ export default function ManagerDashboard() {
   }
 
   const handleClick = () => {
-    setClicked(true)
-    setTimeout(() => setClicked(false), 2000)
+    navigate("/manager-analytics")
   }
 
   if (loading) {
@@ -315,28 +312,6 @@ export default function ManagerDashboard() {
                     View team performance and productivity metrics
                   </Typography>
                 </CardContent>
-
-                {clicked && (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      bgcolor: "rgba(0,0,0,0.6)",
-                      color: "#fff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: 600,
-                      fontSize: 18,
-                      borderRadius: 1,
-                    }}
-                  >
-                    Coming Soon!
-                  </Box>
-                )}
               </Card>
             </Grid>
           </Grid>

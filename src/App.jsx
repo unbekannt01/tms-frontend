@@ -1,5 +1,3 @@
-"use client"
-
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import { useEffect } from "react"
 import Home from "./Page/Home"
@@ -26,6 +24,8 @@ import { handleAppFocus, validateSessionNow, validateIfStale } from "./utils/Ses
 import UserManagement from "./Page/UserManagement"
 import ThankYou from "./Page/ThankYou"
 import Chat from "./Page/Chat.jsx"
+import ManagerAnalytics from "./Page/ManagerAnalytics.jsx"
+import AdminAnalytics from "./Page/AdminAnalytics.jsx"
 
 // Public paths to skip session validation
 const publicPaths = [
@@ -78,6 +78,8 @@ const router = createBrowserRouter(
     { path: "/admin-tasks", element: <AdminTaskDashboard /> },
     { path: "/manager-tasks", element: <ManagerTaskDashboard /> },
     { path: "/user-tasks", element: <UserTaskDashboard /> },
+    { path: "/manager-analytics", element: <ManagerAnalytics /> },
+    { path: "/admin-analytics", element: <AdminAnalytics /> },
     { path: "/chat", element: <Chat /> },
     { path: "*", element: <Navigate to="/" /> },
   ],

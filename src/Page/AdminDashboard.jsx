@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import {
   Box,
@@ -19,6 +17,7 @@ import {
   Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
   Person as ProfileIcon,
+  Insights as InsightsIcon,
 } from "@mui/icons-material"
 import API from "../api"
 import { useNavigate } from "react-router-dom"
@@ -313,6 +312,42 @@ export default function AdminDashboard() {
                   </Typography>
                   <Typography variant="body2" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
                     View all users, manage accounts, and monitor activity
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <Card
+                sx={{
+                  height: "100%",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease-in-out",
+                  backgroundColor: "#ffffff",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  border: "1px solid rgba(6, 95, 70, 0.1)",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    borderColor: "#059669",
+                  },
+                }}
+                onClick={() => navigate("/admin-analytics")}
+              >
+                <CardContent sx={{ p: 4, textAlign: "center" }}>
+                  <InsightsIcon sx={{ fontSize: 48, color: "#059669", mb: 2 }} />
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                      mb: 1,
+                      color: "#1f2937",
+                    }}
+                  >
+                    Analytics
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
+                    Organization-wide task insights (admin)
                   </Typography>
                 </CardContent>
               </Card>
