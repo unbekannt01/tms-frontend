@@ -14,6 +14,10 @@ import {
   Chip,
   CircularProgress,
   LinearProgress,
+  TextField,
+  Button,
+  ToggleButtonGroup,
+  ToggleButton,
 } from "@mui/material"
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar, Legend, PieChart, Pie, Cell } from "recharts"
 import API from "../api"
@@ -22,15 +26,27 @@ import { useNavigate } from "react-router-dom"
 export default function AdminAnalytics() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [filterMode, setFilterMode] = useState("timeframe") // 'timeframe' or 'daterange'
   const [timeframe, setTimeframe] = useState("30")
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
   const [data, setData] = useState(null)
   const [error, setError] = useState("")
 
-  const fetchAnalytics = async (tf = timeframe) => {
+  const fetchAnalytics = async () => {
     try {
       setLoading(true)
-      const res = await API.get(`/admin/analytics?timeframe=${tf}`)
+      let url = "/admin/analytics?"
+
+      if (filterMode === "daterange" && startDate && endDate) {
+        url += `startDate=${startDate}&endDate=${endDate}`
+      } else {
+        url += `timeframe=${timeframe}`
+      }
+
+      const res = await API.get(url)
       setData(res.data?.data || null)
+      setError("")
     } catch (e) {
       setError(e.response?.data?.message || "Failed to load analytics")
     } finally {
@@ -39,8 +55,23 @@ export default function AdminAnalytics() {
   }
 
   useEffect(() => {
-    fetchAnalytics(timeframe)
-  }, [timeframe])
+    fetchAnalytics()
+  }, [])
+
+  const handleApplyFilter = () => {
+    if (filterMode === "daterange" && (!startDate || !endDate)) {
+      setError("Please select both start and end dates")
+      return
+    }
+    fetchAnalytics()
+  }
+
+  const handleFilterModeChange = (event, newMode) => {
+    if (newMode !== null) {
+      setFilterMode(newMode)
+      setError("")
+    }
+  }
 
   if (loading) {
     return (
@@ -82,27 +113,109 @@ export default function AdminAnalytics() {
     >
       <Container maxWidth="lg">
         <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid rgba(6, 95, 70, 0.1)" }}>
-          <Box
-            sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}
-          >
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "#065f46" }}>
-              Admin Analytics Dashboard
-            </Typography>
-            <Box sx={{ display: "flex", gap: 2 }}>
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel>Timeframe</InputLabel>
-                <Select label="Timeframe" value={timeframe} onChange={(e) => setTimeframe(e.target.value)}>
-                  <MenuItem value="7">Last 7 Days</MenuItem>
-                  <MenuItem value="14">Last 14 Days</MenuItem>
-                  <MenuItem value="30">Last 30 Days</MenuItem>
-                  <MenuItem value="90">Last 90 Days</MenuItem>
-                </Select>
-              </FormControl>
+          <Box sx={{ mb: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 2,
+                flexWrap: "wrap",
+                mb: 3,
+              }}
+            >
+              <Typography variant="h5" sx={{ fontWeight: 700, color: "#065f46" }}>
+                Admin Analytics Dashboard
+              </Typography>
               <Chip
                 label="← Back"
                 onClick={() => navigate("/admin-dashboard")}
                 sx={{ cursor: "pointer", fontWeight: 600 }}
               />
+            </Box>
+
+            {/* Filter Controls */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <ToggleButtonGroup
+                value={filterMode}
+                exclusive
+                onChange={handleFilterModeChange}
+                size="small"
+                sx={{ alignSelf: "flex-start" }}
+              >
+                <ToggleButton value="timeframe" sx={{ px: 3 }}>
+                  Quick Timeframe
+                </ToggleButton>
+                <ToggleButton value="daterange" sx={{ px: 3 }}>
+                  Custom Date Range
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                {filterMode === "timeframe" ? (
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Timeframe</InputLabel>
+                    <Select
+                      label="Timeframe"
+                      value={timeframe}
+                      onChange={(e) => setTimeframe(e.target.value)}
+                    >
+                      <MenuItem value="7">Last 7 Days</MenuItem>
+                      <MenuItem value="14">Last 14 Days</MenuItem>
+                      <MenuItem value="30">Last 30 Days</MenuItem>
+                      <MenuItem value="60">Last 60 Days</MenuItem>
+                      <MenuItem value="90">Last 90 Days</MenuItem>
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <>
+                    <TextField
+                      label="Start Date"
+                      type="date"
+                      size="small"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ minWidth: 180 }}
+                    />
+                    <TextField
+                      label="End Date"
+                      type="date"
+                      size="small"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ minWidth: 180 }}
+                    />
+                  </>
+                )}
+                <Button
+                  variant="contained"
+                  onClick={handleApplyFilter}
+                  sx={{
+                    bgcolor: "#059669",
+                    "&:hover": { bgcolor: "#047857" },
+                    textTransform: "none",
+                    fontWeight: 600,
+                    px: 3,
+                  }}
+                >
+                  Apply Filter
+                </Button>
+              </Box>
+
+              {error && (
+                <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                  {error}
+                </Typography>
+              )}
             </Box>
           </Box>
         </Paper>
