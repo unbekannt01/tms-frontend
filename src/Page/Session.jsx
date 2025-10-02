@@ -118,7 +118,7 @@ export default function Sessions() {
 
   const getBrowserIcon = (browser) => {
     const b = browser?.toLowerCase() || "";
-    if (b.includes("chrome")) return "����";
+    if (b.includes("chrome")) return "🌐";
     if (b.includes("firefox")) return "🦊";
     if (b.includes("safari")) return "🧭";
     if (b.includes("edge")) return "🔷";
