@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {
   Box,
   Paper,
@@ -10,7 +10,7 @@ import {
   Grid,
   Card,
   CardContent,
-} from "@mui/material"
+} from "@mui/material";
 import {
   AdminPanelSettings as AdminIcon,
   Assignment as TaskIcon,
@@ -18,74 +18,78 @@ import {
   ExitToApp as LogoutIcon,
   Person as ProfileIcon,
   Insights as InsightsIcon,
-} from "@mui/icons-material"
-import API from "../api"
-import { useNavigate } from "react-router-dom"
-import { startSessionMonitoring, stopSessionMonitoring } from "../utils/SessionManager"
-import { disconnectSocket } from "../services/socket"
+} from "@mui/icons-material";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
+import {
+  startSessionMonitoring,
+  stopSessionMonitoring,
+} from "../utils/SessionManager";
+import { disconnectSocket } from "../services/socket";
 
 export default function AdminDashboard() {
-  const navigate = useNavigate()
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    const sessionId = localStorage.getItem("sessionId")
+    const userData = localStorage.getItem("user");
+    const sessionId = localStorage.getItem("sessionId");
 
     if (!userData || !sessionId) {
-      navigate("/login")
-      return
+      navigate("/login");
+      return;
     }
 
     try {
-      const parsedUser = JSON.parse(userData)
+      const parsedUser = JSON.parse(userData);
 
       if (parsedUser.roleId?.name !== "admin") {
         if (parsedUser.roleId?.name === "manager") {
-          navigate("/manager-dashboard")
+          navigate("/manager-dashboard");
         } else {
-          navigate("/dashboard")
+          navigate("/dashboard");
         }
-        return
+        return;
       }
 
-      setUser(parsedUser)
-      startSessionMonitoring()
+      setUser(parsedUser);
+      startSessionMonitoring();
     } catch (error) {
-      localStorage.clear()
-      navigate("/login")
-      return
+      localStorage.clear();
+      navigate("/login");
+      return;
     }
 
-    setLoading(false)
+    setLoading(false);
 
     return () => {
-      stopSessionMonitoring()
-    }
-  }, [navigate])
+      stopSessionMonitoring();
+    };
+  }, [navigate]);
 
   const logout = async () => {
     try {
-      await API.post("/users/logout")
+      await API.post("/users/logout");
     } catch (err) {
-      console.error("Logout failed", err)
+      console.error("Logout failed", err);
     } finally {
       try {
-        disconnectSocket()
+        disconnectSocket();
       } catch {}
-      stopSessionMonitoring()
-      localStorage.clear()
-      navigate("/")
+      stopSessionMonitoring();
+      localStorage.clear();
+      navigate("/");
     }
-  }
+  };
 
   if (loading) {
     return (
       <Box
         sx={{
           minHeight: "100vh",
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
@@ -93,18 +97,19 @@ export default function AdminDashboard() {
       >
         <CircularProgress sx={{ color: "#059669" }} />
       </Box>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
 
   return (
     <Box
       sx={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        background:
+          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         py: 4,
       }}
     >
@@ -118,7 +123,8 @@ export default function AdminDashboard() {
                   variant="h3"
                   sx={{
                     fontWeight: 700,
-                    background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                    background:
+                      "linear-gradient(135deg, #059669 0%, #047857 100%)",
                     backgroundClip: "text",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -153,7 +159,8 @@ export default function AdminDashboard() {
               p: 4,
               borderRadius: 3,
               backgroundColor: "#ffffff",
-              boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              boxShadow:
+                "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
               border: "1px solid rgba(6, 95, 70, 0.1)",
               mb: 4,
             }}
@@ -171,36 +178,60 @@ export default function AdminDashboard() {
             <Grid container spacing={3}>
               <Grid item xs={12} md={6}>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
                     Full Name
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: "#1f2937" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
                     {user.firstName} {user.lastName}
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
                     Username
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: "#1f2937" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
                     {user.userName}
                   </Typography>
                 </Box>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
                     Email Address
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: "#1f2937" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
                     {user.email}
                   </Typography>
                 </Box>
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", mb: 0.5, fontWeight: 600 }}
+                  >
                     Role
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: "#1f2937" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ fontWeight: 500, color: "#1f2937" }}
+                  >
                     {user.roleId?.displayName || "Administrator"}
                   </Typography>
                 </Box>
@@ -216,11 +247,13 @@ export default function AdminDashboard() {
                   cursor: "pointer",
                   transition: "all 0.2s ease-in-out",
                   backgroundColor: "#ffffff",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                   border: "1px solid rgba(6, 95, 70, 0.1)",
                   "&:hover": {
                     transform: "translateY(-4px)",
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                     borderColor: "#059669",
                   },
                 }}
@@ -238,7 +271,10 @@ export default function AdminDashboard() {
                   >
                     Profile Settings
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                  >
                     Update your personal information and account preferences
                   </Typography>
                 </CardContent>
@@ -252,18 +288,22 @@ export default function AdminDashboard() {
                   cursor: "pointer",
                   transition: "all 0.2s ease-in-out",
                   backgroundColor: "#ffffff",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                   border: "1px solid rgba(6, 95, 70, 0.1)",
                   "&:hover": {
                     transform: "translateY(-4px)",
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                     borderColor: "#059669",
                   },
                 }}
                 onClick={() => navigate("/role-management")}
               >
                 <CardContent sx={{ p: 4, textAlign: "center" }}>
-                  <SettingsIcon sx={{ fontSize: 48, color: "#059669", mb: 2 }} />
+                  <SettingsIcon
+                    sx={{ fontSize: 48, color: "#059669", mb: 2 }}
+                  />
                   <Typography
                     variant="h6"
                     sx={{
@@ -274,7 +314,10 @@ export default function AdminDashboard() {
                   >
                     Role Management
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                  >
                     Configure user roles, permissions, and access controls
                   </Typography>
                 </CardContent>
@@ -288,11 +331,13 @@ export default function AdminDashboard() {
                   cursor: "pointer",
                   transition: "all 0.2s ease-in-out",
                   backgroundColor: "#ffffff",
-                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                  boxShadow:
+                    "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
                   border: "1px solid rgba(6, 95, 70, 0.1)",
                   "&:hover": {
                     transform: "translateY(-4px)",
-                    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                    boxShadow:
+                      "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                     borderColor: "#059669",
                   },
                 }}
@@ -310,14 +355,17 @@ export default function AdminDashboard() {
                   >
                     User Management
                   </Typography>
-                  <Typography variant="body2" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                  >
                     View all users, manage accounts, and monitor activity
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={4}>
+            {/* <Grid item xs={12} sm={6} md={4}>
               <Card
                 sx={{
                   height: "100%",
@@ -351,7 +399,7 @@ export default function AdminDashboard() {
                   </Typography>
                 </CardContent>
               </Card>
-            </Grid>
+            </Grid> */}
           </Grid>
 
           <Paper
@@ -360,14 +408,60 @@ export default function AdminDashboard() {
               p: 4,
               borderRadius: 3,
               backgroundColor: "#ffffff",
-              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               border: "1px solid rgba(6, 95, 70, 0.1)",
               mb: 4,
               cursor: "pointer",
               transition: "all 0.2s ease-in-out",
               "&:hover": {
                 transform: "translateY(-2px)",
-                boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                boxShadow:
+                  "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                borderColor: "#059669",
+              },
+            }}
+            onClick={() => navigate("/admin-analytics")}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <InsightsIcon sx={{ fontSize: 64, color: "#059669" }} />
+              <Box>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 600,
+                    mb: 1,
+                    color: "#1f2937",
+                  }}
+                >
+                  Analytics
+                </Typography>
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                >
+                  Organization-wide task insights (admin)
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              border: "1px solid rgba(6, 95, 70, 0.1)",
+              mb: 4,
+              cursor: "pointer",
+              transition: "all 0.2s ease-in-out",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow:
+                  "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
                 borderColor: "#059669",
               },
             }}
@@ -386,8 +480,12 @@ export default function AdminDashboard() {
                 >
                   Task Management
                 </Typography>
-                <Typography variant="body1" sx={{ color: "#6b7280", lineHeight: 1.6 }}>
-                  Oversee all tasks, assign work, and monitor progress across teams
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#6b7280", lineHeight: 1.6 }}
+                >
+                  Oversee all tasks, assign work, and monitor progress across
+                  teams
                 </Typography>
               </Box>
             </Box>
@@ -399,7 +497,8 @@ export default function AdminDashboard() {
               p: 4,
               borderRadius: 3,
               backgroundColor: "#ffffff",
-              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               border: "1px solid rgba(6, 95, 70, 0.1)",
               textAlign: "center",
             }}
@@ -414,7 +513,10 @@ export default function AdminDashboard() {
             >
               Session Management
             </Typography>
-            <Typography variant="body2" sx={{ color: "#6b7280", mb: 3, lineHeight: 1.6 }}>
+            <Typography
+              variant="body2"
+              sx={{ color: "#6b7280", mb: 3, lineHeight: 1.6 }}
+            >
               Manage your active sessions and account security
             </Typography>
             <Box
@@ -447,13 +549,15 @@ export default function AdminDashboard() {
                   px: 3,
                   py: 1.2,
                   borderRadius: 2,
-                  background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+                  background:
+                    "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
                   boxShadow: "0 4px 14px 0 rgba(220, 38, 38, 0.3)",
                   fontSize: "1rem",
                   fontWeight: 600,
                   textTransform: "none",
                   "&:hover": {
-                    background: "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
+                    background:
+                      "linear-gradient(135deg, #b91c1c 0%, #991b1b 100%)",
                     boxShadow: "0 6px 20px 0 rgba(220, 38, 38, 0.4)",
                     transform: "translateY(-1px)",
                   },
@@ -467,5 +571,5 @@ export default function AdminDashboard() {
         </Box>
       </Container>
     </Box>
-  )
+  );
 }

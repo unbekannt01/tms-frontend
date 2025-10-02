@@ -1,12 +1,10 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import {
   Box,
   Container,
   Paper,
   Typography,
-  Grid,
+  Grid, 
   Card,
   CardContent,
   Select,
