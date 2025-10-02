@@ -292,7 +292,7 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* ✅ AUTO-POPUP: Server's Taking a Power Nap Dialog */}
+      {/* ✅ AUTO-POPUP: Server's Wide Awake Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -316,7 +316,7 @@ export default function Home() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          😴 Server's Taking a Power Nap! ☕
+          🎉 Server's Wide Awake & Ready to Party! 🚀
         </DialogTitle>
         <DialogContent sx={{ mt: 1 }}>
           <Typography
@@ -328,9 +328,13 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            🌙 Our servers are catching some Z's right now, but don't worry -
-            we're still here! Drop us a message and we'll get back to you faster
-            than you can say "coffee break"! ☕✨
+            🎊 Great news! Our servers are fully charged and running smoother
+            than a freshly compiled codebase! 💻✨ We're 100% uptime until
+            November 1st - zero downtime, all the good vibes! 🚀
+            <br />
+            <br />
+            Caught a bug? 404 error? Stack overflow? No worries! Drop us a
+            message below and we'll squash it faster than you can Ctrl+Z! 🐛⚡
           </Typography>
           <form
             onSubmit={handleFormSubmit}
@@ -376,7 +380,7 @@ export default function Home() {
             <input
               type="hidden"
               name="_subject"
-              value="Message from TaskFlow - Server Nap Time!"
+              value="Message from TaskFlow - We're All Ears!"
             />
             <Button
               type="submit"
@@ -419,7 +423,7 @@ export default function Home() {
               testing.buddy1111@gmail.com
             </a>
             <br />
-            💤 Even when servers sleep, we're always listening!
+            🎯 Questions? Bugs? High-fives? We're here for all of it!
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
