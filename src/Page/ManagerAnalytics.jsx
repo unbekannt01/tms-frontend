@@ -40,12 +40,13 @@ import { useNavigate } from "react-router-dom";
 export default function ManagerAnalytics() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [filterMode, setFilterMode] = useState("timeframe"); // 'timeframe' or 'daterange'
+  const [filterMode, setFilterMode] = useState("timeframe");
   const [timeframe, setTimeframe] = useState("30");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [trendView, setTrendView] = useState("daily");
 
   const fetchAnalytics = async () => {
     try {
@@ -131,6 +132,41 @@ export default function ManagerAnalytics() {
       value: item.count,
     })) || [];
 
+  // Aggregate data for weekly view
+  const getAggregatedTrends = () => {
+    if (!productivityTrends || productivityTrends.length === 0) return [];
+
+    if (trendView === "daily" || productivityTrends.length <= 14) {
+      return productivityTrends;
+    }
+
+    // Group by week
+    const weeklyData = {};
+    productivityTrends.forEach((item) => {
+      const date = new Date(item.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = {
+          date: weekKey,
+          tasksCreated: 0,
+          tasksCompleted: 0,
+        };
+      }
+
+      weeklyData[weekKey].tasksCreated += item.tasksCreated || 0;
+      weeklyData[weekKey].tasksCompleted += item.tasksCompleted || 0;
+    });
+
+    return Object.values(weeklyData).sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+  };
+
+  const trendData = getAggregatedTrends();
+
   return (
     <Box
       sx={{
@@ -174,7 +210,6 @@ export default function ManagerAnalytics() {
               />
             </Box>
 
-            {/* Filter Controls */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <ToggleButtonGroup
                 value={filterMode}
@@ -261,7 +296,6 @@ export default function ManagerAnalytics() {
         </Paper>
 
         <Grid container spacing={3}>
-          {/* Overview cards */}
           <Grid item xs={12} md={3}>
             <Card
               elevation={0}
@@ -412,7 +446,6 @@ export default function ManagerAnalytics() {
             </Card>
           </Grid>
 
-          {/* Productivity Trends */}
           <Grid item xs={12} md={8}>
             <Card
               elevation={0}
@@ -423,59 +456,119 @@ export default function ManagerAnalytics() {
                 height: 400,
               }}
             >
-              <Typography
-                variant="h6"
-                sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  mb: 2,
+                }}
               >
-                Productivity Trends
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-                Daily task creation and completion patterns
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={productivityTrends}>
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+                  >
+                    Productivity Trends
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    {trendView === "daily" ? "Daily" : "Weekly"} task creation
+                    and completion patterns
+                  </Typography>
+                </Box>
+                {productivityTrends && productivityTrends.length > 14 && (
+                  <ToggleButtonGroup
+                    value={trendView}
+                    exclusive
+                    onChange={(e, val) => val && setTrendView(val)}
+                    size="small"
+                  >
+                    <ToggleButton
+                      value="daily"
+                      sx={{ px: 2, py: 0.5, fontSize: "0.75rem" }}
+                    >
+                      Daily
+                    </ToggleButton>
+                    <ToggleButton
+                      value="weekly"
+                      sx={{ px: 2, py: 0.5, fontSize: "0.75rem" }}
+                    >
+                      Weekly
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                )}
+              </Box>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart
+                  data={trendData}
+                  margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis
                     dataKey="date"
                     stroke="#6b7280"
-                    style={{ fontSize: "12px" }}
+                    style={{ fontSize: "11px" }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      if (trendView === "weekly") {
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }
+                      return trendData.length > 30
+                        ? `${date.getMonth() + 1}/${date.getDate()}`
+                        : `${date.getMonth() + 1}/${date.getDate()}`;
+                    }}
+                    interval={
+                      trendData.length > 30
+                        ? Math.floor(trendData.length / 10)
+                        : "preserveStartEnd"
+                    }
                   />
-                  <YAxis stroke="#6b7280" style={{ fontSize: "12px" }} />
+                  <YAxis stroke="#6b7280" style={{ fontSize: "11px" }} />
                   <Tooltip
                     contentStyle={{
                       borderRadius: 8,
                       border: "1px solid #e5e7eb",
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      fontSize: "12px",
+                    }}
+                    labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return trendView === "weekly"
+                        ? `Week of ${date.toLocaleDateString()}`
+                        : date.toLocaleDateString();
                     }}
                   />
                   <Legend
-                    wrapperStyle={{ paddingTop: "10px" }}
+                    wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
                     iconType="circle"
                   />
                   <Line
                     type="monotone"
                     dataKey="tasksCreated"
                     stroke="#059669"
-                    strokeWidth={3}
+                    strokeWidth={2.5}
                     name="Tasks Created"
-                    dot={{ r: 4, fill: "#059669" }}
-                    activeDot={{ r: 6 }}
+                    dot={
+                      trendData.length <= 30 ? { r: 3, fill: "#059669" } : false
+                    }
+                    activeDot={{ r: 5 }}
                   />
                   <Line
                     type="monotone"
                     dataKey="tasksCompleted"
                     stroke="#2563eb"
-                    strokeWidth={3}
+                    strokeWidth={2.5}
                     name="Tasks Completed"
-                    dot={{ r: 4, fill: "#2563eb" }}
-                    activeDot={{ r: 6 }}
+                    dot={
+                      trendData.length <= 30 ? { r: 3, fill: "#2563eb" } : false
+                    }
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             </Card>
           </Grid>
 
-          {/* Status Distribution */}
           <Grid item xs={12} md={4}>
             <Card
               elevation={0}
@@ -492,20 +585,18 @@ export default function ManagerAnalytics() {
               >
                 Status Distribution
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+              <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
                 Task breakdown by status
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={statusData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name}: ${(percent * 100).toFixed(0)}%`
-                    }
-                    outerRadius={80}
+                    label={false}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -517,12 +608,18 @@ export default function ManagerAnalytics() {
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value, entry) =>
+                      `${value}: ${entry.payload.value}`
+                    }
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
           </Grid>
 
-          {/* Team Performance */}
           <Grid item xs={12}>
             <Card
               elevation={0}

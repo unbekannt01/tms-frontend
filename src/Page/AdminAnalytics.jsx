@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -18,60 +18,108 @@ import {
   Button,
   ToggleButtonGroup,
   ToggleButton,
-} from "@mui/material"
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, BarChart, Bar, Legend, PieChart, Pie, Cell } from "recharts"
-import API from "../api"
-import { useNavigate } from "react-router-dom"
+} from "@mui/material";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  BarChart,
+  Bar,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import API from "../api";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminAnalytics() {
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState(true)
-  const [filterMode, setFilterMode] = useState("timeframe") // 'timeframe' or 'daterange'
-  const [timeframe, setTimeframe] = useState("30")
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
-  const [data, setData] = useState(null)
-  const [error, setError] = useState("")
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [filterMode, setFilterMode] = useState("timeframe");
+  const [timeframe, setTimeframe] = useState("30");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [trendView, setTrendView] = useState("daily");
 
   const fetchAnalytics = async () => {
     try {
-      setLoading(true)
-      let url = "/admin/analytics?"
+      setLoading(true);
+      let url = "/admin/analytics?";
 
       if (filterMode === "daterange" && startDate && endDate) {
-        url += `startDate=${startDate}&endDate=${endDate}`
+        url += `startDate=${startDate}&endDate=${endDate}`;
       } else {
-        url += `timeframe=${timeframe}`
+        url += `timeframe=${timeframe}`;
       }
 
-      const res = await API.get(url)
-      setData(res.data?.data || null)
-      setError("")
+      const res = await API.get(url);
+      setData(res.data?.data || null);
+      setError("");
     } catch (e) {
-      setError(e.response?.data?.message || "Failed to load analytics")
+      setError(e.response?.data?.message || "Failed to load analytics");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchAnalytics()
-  }, [])
+    fetchAnalytics();
+  }, []);
 
   const handleApplyFilter = () => {
     if (filterMode === "daterange" && (!startDate || !endDate)) {
-      setError("Please select both start and end dates")
-      return
+      setError("Please select both start and end dates");
+      return;
     }
-    fetchAnalytics()
-  }
+    fetchAnalytics();
+  };
 
   const handleFilterModeChange = (event, newMode) => {
     if (newMode !== null) {
-      setFilterMode(newMode)
-      setError("")
+      setFilterMode(newMode);
+      setError("");
     }
-  }
+  };
+
+  // Aggregate data for weekly view
+  const getAggregatedTrends = () => {
+    if (!data?.trends || data.trends.length === 0) return [];
+
+    if (trendView === "daily" || data.trends.length <= 14) {
+      return data.trends;
+    }
+
+    // Group by week
+    const weeklyData = {};
+    data.trends.forEach((item) => {
+      const date = new Date(item.date);
+      const weekStart = new Date(date);
+      weekStart.setDate(date.getDate() - date.getDay());
+      const weekKey = weekStart.toISOString().split("T")[0];
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = {
+          date: weekKey,
+          tasksCreated: 0,
+          tasksCompleted: 0,
+        };
+      }
+
+      weeklyData[weekKey].tasksCreated += item.tasksCreated || 0;
+      weeklyData[weekKey].tasksCompleted += item.tasksCompleted || 0;
+    });
+
+    return Object.values(weeklyData).sort(
+      (a, b) => new Date(a.date) - new Date(b.date)
+    );
+  };
 
   if (loading) {
     return (
@@ -81,12 +129,13 @@ export default function AdminAnalytics() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+          background:
+            "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
         }}
       >
         <CircularProgress sx={{ color: "#059669" }} />
       </Box>
-    )
+    );
   }
 
   if (!data) {
@@ -94,25 +143,49 @@ export default function AdminAnalytics() {
       <Box sx={{ p: 4 }}>
         <Typography color="error">{error || "No data"}</Typography>
       </Box>
-    )
+    );
   }
 
-  const { overview, statusDistribution, priorityDistribution, completionRates, trends, byRole, topManagers, topUsers } =
-    data
+  const {
+    overview,
+    statusDistribution,
+    priorityDistribution,
+    completionRates,
+    trends,
+    byRole,
+    topManagers,
+    topUsers,
+  } = data;
 
-  const COLORS = ['#059669', '#2563eb', '#f59e0b', '#ef4444', '#8b5cf6']
+  const COLORS = ["#059669", "#2563eb", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-  const statusData = statusDistribution?.map(item => ({
-    name: item.status,
-    value: item.count
-  })) || []
+  const statusData =
+    statusDistribution?.map((item) => ({
+      name: item.status,
+      value: item.count,
+    })) || [];
+
+  const trendData = getAggregatedTrends();
 
   return (
     <Box
-      sx={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)", py: 4 }}
+      sx={{
+        minHeight: "100vh",
+        background:
+          "linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%)",
+        py: 4,
+      }}
     >
       <Container maxWidth="lg">
-        <Paper elevation={0} sx={{ p: 3, mb: 3, borderRadius: 3, border: "1px solid rgba(6, 95, 70, 0.1)" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            mb: 3,
+            borderRadius: 3,
+            border: "1px solid rgba(6, 95, 70, 0.1)",
+          }}
+        >
           <Box sx={{ mb: 3 }}>
             <Box
               sx={{
@@ -124,7 +197,10 @@ export default function AdminAnalytics() {
                 mb: 3,
               }}
             >
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "#065f46" }}>
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 700, color: "#065f46" }}
+              >
                 Admin Analytics Dashboard
               </Typography>
               <Chip
@@ -134,7 +210,6 @@ export default function AdminAnalytics() {
               />
             </Box>
 
-            {/* Filter Controls */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <ToggleButtonGroup
                 value={filterMode}
@@ -222,12 +297,31 @@ export default function AdminAnalytics() {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={3}>
-            <Card elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid #e5e7eb", height: '100%' }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: "100%",
+              }}
+            >
               <CardContent sx={{ p: 0 }}>
-                <Typography variant="caption" sx={{ color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#6b7280",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
                   Total Tasks
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: "#065f46", mt: 1 }}>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: "#065f46", mt: 1 }}
+                >
                   {overview.totalTasks}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#6b7280", mt: 1 }}>
@@ -237,12 +331,32 @@ export default function AdminAnalytics() {
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
-            <Card elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid #e5e7eb", height: '100%', bgcolor: '#f0fdf4' }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: "100%",
+                bgcolor: "#f0fdf4",
+              }}
+            >
               <CardContent sx={{ p: 0 }}>
-                <Typography variant="caption" sx={{ color: "#059669", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#059669",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
                   Completed
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: "#059669", mt: 1 }}>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: "#059669", mt: 1 }}
+                >
                   {overview.completed}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#047857", mt: 1 }}>
@@ -252,12 +366,32 @@ export default function AdminAnalytics() {
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
-            <Card elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid #e5e7eb", height: '100%', bgcolor: '#fef2f2' }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: "100%",
+                bgcolor: "#fef2f2",
+              }}
+            >
               <CardContent sx={{ p: 0 }}>
-                <Typography variant="caption" sx={{ color: "#dc2626", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#dc2626",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
                   Overdue
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: "#dc2626", mt: 1 }}>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: "#dc2626", mt: 1 }}
+                >
                   {overview.overdue}
                 </Typography>
                 <Typography variant="body2" sx={{ color: "#b91c1c", mt: 1 }}>
@@ -267,79 +401,168 @@ export default function AdminAnalytics() {
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
-            <Card elevation={0} sx={{ p: 2.5, borderRadius: 3, border: "1px solid #e5e7eb", height: '100%', bgcolor: '#eff6ff' }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: "100%",
+                bgcolor: "#eff6ff",
+              }}
+            >
               <CardContent sx={{ p: 0 }}>
-                <Typography variant="caption" sx={{ color: "#2563eb", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: "#2563eb",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
                   Completion Rate
                 </Typography>
-                <Typography variant="h3" sx={{ fontWeight: 700, color: "#2563eb", mt: 1 }}>
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: 700, color: "#2563eb", mt: 1 }}
+                >
                   {overview.completionRate}%
                 </Typography>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={overview.completionRate} 
-                  sx={{ 
-                    mt: 2, 
-                    height: 8, 
+                <LinearProgress
+                  variant="determinate"
+                  value={overview.completionRate}
+                  sx={{
+                    mt: 2,
+                    height: 8,
                     borderRadius: 4,
-                    bgcolor: '#dbeafe',
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: '#2563eb'
-                    }
-                  }} 
+                    bgcolor: "#dbeafe",
+                    "& .MuiLinearProgress-bar": {
+                      bgcolor: "#2563eb",
+                    },
+                  }}
                 />
               </CardContent>
             </Card>
           </Grid>
 
           <Grid item xs={12} md={8}>
-            <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb", height: 400 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}>
-                Productivity Trends
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
-                Daily task creation and completion patterns
-              </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trends}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: 400,
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  mb: 2,
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="h6"
+                    sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+                  >
+                    Productivity Trends
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    {trendView === "daily" ? "Daily" : "Weekly"} task creation
+                    and completion patterns
+                  </Typography>
+                </Box>
+                {trends && trends.length > 14 && (
+                  <ToggleButtonGroup
+                    value={trendView}
+                    exclusive
+                    onChange={(e, val) => val && setTrendView(val)}
+                    size="small"
+                  >
+                    <ToggleButton
+                      value="daily"
+                      sx={{ px: 2, py: 0.5, fontSize: "0.75rem" }}
+                    >
+                      Daily
+                    </ToggleButton>
+                    <ToggleButton
+                      value="weekly"
+                      sx={{ px: 2, py: 0.5, fontSize: "0.75rem" }}
+                    >
+                      Weekly
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                )}
+              </Box>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart
+                  data={trendData}
+                  margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     stroke="#6b7280"
-                    style={{ fontSize: '12px' }}
+                    style={{ fontSize: "11px" }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      if (trendView === "weekly") {
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }
+                      return trendData.length > 30
+                        ? `${date.getMonth() + 1}/${date.getDate()}`
+                        : `${date.getMonth() + 1}/${date.getDate()}`;
+                    }}
+                    interval={
+                      trendData.length > 30
+                        ? Math.floor(trendData.length / 10)
+                        : "preserveStartEnd"
+                    }
                   />
-                  <YAxis 
-                    stroke="#6b7280"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: 8, 
-                      border: '1px solid #e5e7eb',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
+                  <YAxis stroke="#6b7280" style={{ fontSize: "11px" }} />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: 8,
+                      border: "1px solid #e5e7eb",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                      fontSize: "12px",
+                    }}
+                    labelFormatter={(value) => {
+                      const date = new Date(value);
+                      return trendView === "weekly"
+                        ? `Week of ${date.toLocaleDateString()}`
+                        : date.toLocaleDateString();
                     }}
                   />
-                  <Legend 
-                    wrapperStyle={{ paddingTop: '10px' }}
+                  <Legend
+                    wrapperStyle={{ paddingTop: "10px", fontSize: "12px" }}
                     iconType="circle"
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="tasksCreated" 
-                    stroke="#059669" 
-                    strokeWidth={3}
-                    name="Tasks Created" 
-                    dot={{ r: 4, fill: '#059669' }}
-                    activeDot={{ r: 6 }}
+                  <Line
+                    type="monotone"
+                    dataKey="tasksCreated"
+                    stroke="#059669"
+                    strokeWidth={2.5}
+                    name="Tasks Created"
+                    dot={
+                      trendData.length <= 30 ? { r: 3, fill: "#059669" } : false
+                    }
+                    activeDot={{ r: 5 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="tasksCompleted" 
-                    stroke="#2563eb" 
-                    strokeWidth={3}
+                  <Line
+                    type="monotone"
+                    dataKey="tasksCompleted"
+                    stroke="#2563eb"
+                    strokeWidth={2.5}
                     name="Tasks Completed"
-                    dot={{ r: 4, fill: '#2563eb' }}
-                    activeDot={{ r: 6 }}
+                    dot={
+                      trendData.length <= 30 ? { r: 3, fill: "#2563eb" } : false
+                    }
+                    activeDot={{ r: 5 }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -347,38 +570,65 @@ export default function AdminAnalytics() {
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb", height: 400 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}>
+            <Card
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: 3,
+                border: "1px solid #e5e7eb",
+                height: 400,
+              }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+              >
                 Status Distribution
               </Typography>
-              <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
+              <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
                 Task breakdown by status
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={statusData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    label={false}
+                    outerRadius={90}
                     fill="#8884d8"
                     dataKey="value"
                   >
                     {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value, entry) =>
+                      `${value}: ${entry.payload.value}`
+                    }
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </Card>
           </Grid>
 
           <Grid item xs={12}>
-            <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}>
+            <Card
+              elevation={0}
+              sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+              >
                 Role-Based Task Distribution
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
@@ -386,138 +636,221 @@ export default function AdminAnalytics() {
               </Typography>
               <Grid container spacing={3}>
                 <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, bgcolor: '#f9fafb' }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "#065f46" }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 3, borderRadius: 2, bgcolor: "#f9fafb" }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700, mb: 2, color: "#065f46" }}
+                    >
                       Tasks Assigned To
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             👤 Users
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#059669' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#059669" }}
+                          >
                             {byRole.assigned.user || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.assigned.user / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.assigned.user / overview.totalTasks) * 100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#059669' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#059669" },
+                          }}
                         />
                       </Box>
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             👔 Managers
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#2563eb' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#2563eb" }}
+                          >
                             {byRole.assigned.manager || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.assigned.manager / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.assigned.manager / overview.totalTasks) *
+                            100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
+                          }}
                         />
                       </Box>
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             ⚙️ Admins
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#f59e0b" }}
+                          >
                             {byRole.assigned.admin || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.assigned.admin / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.assigned.admin / overview.totalTasks) * 100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#f59e0b' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#f59e0b" },
+                          }}
                         />
                       </Box>
                     </Box>
                   </Paper>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, bgcolor: '#f9fafb' }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "#065f46" }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{ p: 3, borderRadius: 2, bgcolor: "#f9fafb" }}
+                  >
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: 700, mb: 2, color: "#065f46" }}
+                    >
                       Tasks Created By
                     </Typography>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box
+                      sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+                    >
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             👤 Users
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#059669' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#059669" }}
+                          >
                             {byRole.created.user || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.created.user / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.created.user / overview.totalTasks) * 100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#059669' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#059669" },
+                          }}
                         />
                       </Box>
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             👔 Managers
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#2563eb' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#2563eb" }}
+                          >
                             {byRole.created.manager || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.created.manager / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.created.manager / overview.totalTasks) * 100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#2563eb' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#2563eb" },
+                          }}
                         />
                       </Box>
                       <Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            mb: 1,
+                          }}
+                        >
                           <Typography variant="body2" sx={{ fontWeight: 600 }}>
                             ⚙️ Admins
                           </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 700, color: '#f59e0b' }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "#f59e0b" }}
+                          >
                             {byRole.created.admin || 0}
                           </Typography>
                         </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={(byRole.created.admin / overview.totalTasks) * 100} 
-                          sx={{ 
-                            height: 6, 
+                        <LinearProgress
+                          variant="determinate"
+                          value={
+                            (byRole.created.admin / overview.totalTasks) * 100
+                          }
+                          sx={{
+                            height: 6,
                             borderRadius: 3,
-                            bgcolor: '#e5e7eb',
-                            '& .MuiLinearProgress-bar': { bgcolor: '#f59e0b' }
-                          }} 
+                            bgcolor: "#e5e7eb",
+                            "& .MuiLinearProgress-bar": { bgcolor: "#f59e0b" },
+                          }}
                         />
                       </Box>
                     </Box>
@@ -528,8 +861,14 @@ export default function AdminAnalytics() {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}>
+            <Card
+              elevation={0}
+              sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+              >
                 Top Managers
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
@@ -538,48 +877,89 @@ export default function AdminAnalytics() {
               <Grid container spacing={2}>
                 {topManagers.map((manager, idx) => (
                   <Grid item xs={12} key={idx}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, bgcolor: idx === 0 ? '#f0fdf4' : 'transparent' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {idx === 0 && <span style={{ fontSize: '20px' }}>🏆</span>}
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#065f46" }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: idx === 0 ? "#f0fdf4" : "transparent",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          mb: 1.5,
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          {idx === 0 && (
+                            <span style={{ fontSize: "20px" }}>🏆</span>
+                          )}
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 700, color: "#065f46" }}
+                          >
                             {manager.name}
                           </Typography>
                         </Box>
-                        <Chip 
-                          label={`${manager.completionRate}%`} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: manager.completionRate >= 80 ? '#d1fae5' : manager.completionRate >= 60 ? '#fef3c7' : '#fee2e2',
-                            color: manager.completionRate >= 80 ? '#047857' : manager.completionRate >= 60 ? '#b45309' : '#b91c1c',
-                            fontWeight: 700
+                        <Chip
+                          label={`${manager.completionRate}%`}
+                          size="small"
+                          sx={{
+                            bgcolor:
+                              manager.completionRate >= 80
+                                ? "#d1fae5"
+                                : manager.completionRate >= 60
+                                ? "#fef3c7"
+                                : "#fee2e2",
+                            color:
+                              manager.completionRate >= 80
+                                ? "#047857"
+                                : manager.completionRate >= 60
+                                ? "#b45309"
+                                : "#b91c1c",
+                            fontWeight: 700,
                           }}
                         />
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 3, mb: 1 }}>
+                      <Box sx={{ display: "flex", gap: 3, mb: 1 }}>
                         <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                          <span style={{ fontWeight: 700, color: '#059669' }}>{manager.tasksAssigned}</span> tasks assigned
+                          <span style={{ fontWeight: 700, color: "#059669" }}>
+                            {manager.tasksAssigned}
+                          </span>{" "}
+                          tasks assigned
                         </Typography>
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={manager.completionRate} 
-                        sx={{ 
-                          height: 6, 
+                      <LinearProgress
+                        variant="determinate"
+                        value={manager.completionRate}
+                        sx={{
+                          height: 6,
                           borderRadius: 3,
-                          bgcolor: '#e5e7eb',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: manager.completionRate >= 80 ? '#059669' : manager.completionRate >= 60 ? '#f59e0b' : '#ef4444'
-                          }
-                        }} 
+                          bgcolor: "#e5e7eb",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor:
+                              manager.completionRate >= 80
+                                ? "#059669"
+                                : manager.completionRate >= 60
+                                ? "#f59e0b"
+                                : "#ef4444",
+                          },
+                        }}
                       />
                     </Paper>
                   </Grid>
                 ))}
                 {topManagers.length === 0 && (
                   <Grid item xs={12}>
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <Typography color="text.secondary">No manager data available for this timeframe.</Typography>
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <Typography color="text.secondary">
+                        No manager data available for this timeframe.
+                      </Typography>
                     </Box>
                   </Grid>
                 )}
@@ -588,8 +968,14 @@ export default function AdminAnalytics() {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Card elevation={0} sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}>
+            <Card
+              elevation={0}
+              sx={{ p: 3, borderRadius: 3, border: "1px solid #e5e7eb" }}
+            >
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, mb: 0.5, color: "#065f46" }}
+              >
                 Top Users
               </Typography>
               <Typography variant="body2" sx={{ color: "#6b7280", mb: 3 }}>
@@ -598,48 +984,78 @@ export default function AdminAnalytics() {
               <Grid container spacing={2}>
                 {topUsers.map((user, idx) => (
                   <Grid item xs={12} key={idx}>
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, bgcolor: idx === 0 ? '#eff6ff' : 'transparent' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {idx === 0 && <span style={{ fontSize: '20px' }}>⭐</span>}
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#065f46" }}>
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 2,
+                        bgcolor: idx === 0 ? "#eff6ff" : "transparent",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          mb: 1.5,
+                        }}
+                      >
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          {idx === 0 && (
+                            <span style={{ fontSize: "20px" }}>⭐</span>
+                          )}
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 700, color: "#065f46" }}
+                          >
                             {user.name}
                           </Typography>
                         </Box>
-                        <Chip 
-                          label={`${user.activeTasks} active`} 
-                          size="small" 
-                          sx={{ 
-                            bgcolor: '#e0e7ff',
-                            color: '#3730a3',
-                            fontWeight: 600
+                        <Chip
+                          label={`${user.activeTasks} active`}
+                          size="small"
+                          sx={{
+                            bgcolor: "#e0e7ff",
+                            color: "#3730a3",
+                            fontWeight: 600,
                           }}
                         />
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 3, mb: 1 }}>
+                      <Box sx={{ display: "flex", gap: 3, mb: 1 }}>
                         <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                          <span style={{ fontWeight: 700, color: '#2563eb' }}>{user.tasksCompleted}</span> completed
+                          <span style={{ fontWeight: 700, color: "#2563eb" }}>
+                            {user.tasksCompleted}
+                          </span>{" "}
+                          completed
                         </Typography>
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={(user.tasksCompleted / (user.tasksCompleted + user.activeTasks)) * 100} 
-                        sx={{ 
-                          height: 6, 
+                      <LinearProgress
+                        variant="determinate"
+                        value={
+                          (user.tasksCompleted /
+                            (user.tasksCompleted + user.activeTasks)) *
+                          100
+                        }
+                        sx={{
+                          height: 6,
                           borderRadius: 3,
-                          bgcolor: '#e5e7eb',
-                          '& .MuiLinearProgress-bar': {
-                            bgcolor: '#2563eb'
-                          }
-                        }} 
+                          bgcolor: "#e5e7eb",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: "#2563eb",
+                          },
+                        }}
                       />
                     </Paper>
                   </Grid>
                 ))}
                 {topUsers.length === 0 && (
                   <Grid item xs={12}>
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <Typography color="text.secondary">No user data available for this timeframe.</Typography>
+                    <Box sx={{ textAlign: "center", py: 4 }}>
+                      <Typography color="text.secondary">
+                        No user data available for this timeframe.
+                      </Typography>
                     </Box>
                   </Grid>
                 )}
@@ -649,5 +1065,5 @@ export default function AdminAnalytics() {
         </Grid>
       </Container>
     </Box>
-  )
+  );
 }
