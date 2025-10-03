@@ -32,8 +32,9 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  Checkbox,
 } from "@mui/material";
-import { Search, Delete } from "@mui/icons-material";
+import { Search, Delete, Logout } from "@mui/icons-material";
 import API from "../api";
 
 export default function UserManagement() {
@@ -55,6 +56,8 @@ export default function UserManagement() {
     message: "",
     severity: "success",
   });
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchRoles();
@@ -99,7 +102,7 @@ export default function UserManagement() {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
     setPage(0);
   };
 
@@ -131,32 +134,81 @@ export default function UserManagement() {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      await API.delete(`/users/${userToDelete._id}`);
-      setSnackbar({
-        open: true,
-        message: "User deleted successfully",
-        severity: "success",
-      });
-      // Refresh the user list
-      fetchUsers(page + 1, rowsPerPage, selectedRole, searchTerm);
-    } catch (err) {
-      console.error("Error deleting user:", err);
-      setSnackbar({
-        open: true,
-        message: "Failed to delete user",
-        severity: "error",
-      });
-    } finally {
-      setDeleteDialogOpen(false);
-      setUserToDelete(null);
+  const handleSelectAllClick = (event) => {
+    if (event.target.checked) {
+      const pageIds = users.map((u) => u._id);
+      setSelectedIds(pageIds);
+    } else {
+      setSelectedIds([]);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-    setUserToDelete(null);
+  const handleRowSelect = (userId) => {
+    setSelectedIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleBulkDeleteClick = () => setBulkDeleteDialogOpen(true);
+  const handleBulkDeleteCancel = () => setBulkDeleteDialogOpen(false);
+
+  const handleBulkDeleteConfirm = async () => {
+    try {
+      await API.post(`/users/bulk-delete`, { ids: selectedIds });
+      setSnackbar({
+        open: true,
+        message: `Deleted ${selectedIds.length} user(s)`,
+        severity: "success",
+      });
+      setSelectedIds([]);
+      setBulkDeleteDialogOpen(false);
+      // Refresh current page
+      fetchUsers(page + 1, rowsPerPage, selectedRole, searchTerm);
+    } catch (err) {
+      console.error("Error bulk deleting users:", err);
+      setSnackbar({
+        open: true,
+        message: "Failed to bulk delete users",
+        severity: "error",
+      });
+      setBulkDeleteDialogOpen(false);
+    }
+  };
+
+  const handleLogoutAllSessions = async () => {
+    try {
+      await API.post("/admin/sessions/logout-all");
+      setSnackbar({
+        open: true,
+        message: "All sessions have been logged out",
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to logout all sessions",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleLogoutUserSessions = async (userId) => {
+    try {
+      await API.post(`/admin/sessions/logout-user/${userId}`);
+      setSnackbar({
+        open: true,
+        message: "User sessions have been logged out",
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to logout user sessions",
+        severity: "error",
+      });
+    }
   };
 
   const handleSnackbarClose = () => {
@@ -188,7 +240,14 @@ export default function UserManagement() {
       }}
     >
       <Container maxWidth="lg">
-        <Box sx={{ mb: 3 }}>
+        <Box
+          sx={{
+            mb: 3,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Button
             variant="outlined"
             onClick={() => navigate("/dashboard")}
@@ -205,6 +264,29 @@ export default function UserManagement() {
           >
             ← Back to Dashboard
           </Button>
+
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<Delete />}
+              onClick={handleBulkDeleteClick}
+              disabled={selectedIds.length === 0}
+              sx={{ borderRadius: 2 }}
+            >
+              Delete Selected ({selectedIds.length})
+            </Button>
+
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<Logout />}
+              onClick={handleLogoutAllSessions}
+              sx={{ borderRadius: 2 }}
+            >
+              Logout All Sessions
+            </Button>
+          </Box>
         </Box>
 
         <Typography
@@ -274,6 +356,21 @@ export default function UserManagement() {
                 <Table>
                   <TableHead>
                     <TableRow>
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          color="primary"
+                          indeterminate={
+                            selectedIds.length > 0 &&
+                            selectedIds.length < users.length
+                          }
+                          checked={
+                            users.length > 0 &&
+                            selectedIds.length === users.length
+                          }
+                          onChange={handleSelectAllClick}
+                          inputProps={{ "aria-label": "select all users" }}
+                        />
+                      </TableCell>
                       <TableCell>
                         <b>Full Name</b>
                       </TableCell>
@@ -294,40 +391,66 @@ export default function UserManagement() {
                   <TableBody>
                     {users.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                        <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                           <Typography color="textSecondary">
                             No users found
                           </Typography>
                         </TableCell>
                       </TableRow>
                     ) : (
-                      users.map((user) => (
-                        <TableRow key={user._id}>
-                          <TableCell>
-                            {user.firstName} {user.lastName}
-                          </TableCell>
-                          <TableCell>{user.userName}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={user.roleId?.displayName || "User"}
-                              sx={{
-                                backgroundColor: "#f0fdf4",
-                                color: "#059669",
-                                fontWeight: 600,
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <IconButton
-                              onClick={() => handleDeleteClick(user)}
-                              sx={{ color: "error.main" }}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      users.map((user) => {
+                        const isItemSelected = selectedIds.includes(user._id);
+                        return (
+                          <TableRow
+                            key={user._id}
+                            hover
+                            selected={isItemSelected}
+                          >
+                            <TableCell padding="checkbox">
+                              <Checkbox
+                                color="primary"
+                                checked={isItemSelected}
+                                onChange={() => handleRowSelect(user._id)}
+                                inputProps={{
+                                  "aria-labelledby": `select-${user._id}`,
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell id={`select-${user._id}`}>
+                              {user.firstName} {user.lastName}
+                            </TableCell>
+                            <TableCell>{user.userName}</TableCell>
+                            <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={user.roleId?.displayName || "User"}
+                                sx={{
+                                  backgroundColor: "#f0fdf4",
+                                  color: "#059669",
+                                  fontWeight: 600,
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell align="center">
+                              <IconButton
+                                onClick={() => handleDeleteClick(user)}
+                                sx={{ color: "error.main" }}
+                              >
+                                <Delete />
+                              </IconButton>
+                              <IconButton
+                                onClick={() =>
+                                  handleLogoutUserSessions(user._id)
+                                }
+                                sx={{ ml: 1 }}
+                                title="Logout all sessions for this user"
+                              >
+                                <Logout />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
                     )}
                   </TableBody>
                 </Table>
@@ -345,24 +468,21 @@ export default function UserManagement() {
           )}
         </Paper>
       </Container>
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>Confirm Delete</DialogTitle>
+
+      <Dialog open={bulkDeleteDialogOpen} onClose={handleBulkDeleteCancel}>
+        <DialogTitle>Confirm Bulk Delete</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete{" "}
-            <b>
-              {userToDelete?.firstName} {userToDelete?.lastName}
-            </b>
-            ?
+            This will permanently delete {selectedIds.length} selected user(s).
+            This action cannot be undone. Are you sure you want to proceed?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} color="inherit">
+          <Button onClick={handleBulkDeleteCancel} color="inherit">
             Cancel
           </Button>
           <Button
-            onClick={handleDeleteConfirm}
+            onClick={handleBulkDeleteConfirm}
             color="error"
             variant="contained"
           >
@@ -371,7 +491,6 @@ export default function UserManagement() {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar for success/error messages */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
