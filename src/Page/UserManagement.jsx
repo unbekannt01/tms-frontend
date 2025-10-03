@@ -33,7 +33,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { Search, Delete } from "@mui/icons-material";
+import { Search, Delete, Logout } from "@mui/icons-material";
 import API from "../api";
 
 export default function UserManagement() {
@@ -99,7 +99,7 @@ export default function UserManagement() {
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
     setPage(0);
   };
 
@@ -163,6 +163,40 @@ export default function UserManagement() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const handleLogoutAllSessions = async () => {
+    try {
+      await API.post("/admin/sessions/logout-all");
+      setSnackbar({
+        open: true,
+        message: "All sessions have been logged out",
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to logout all sessions",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleLogoutUserSessions = async (userId) => {
+    try {
+      await API.post(`/admin/sessions/logout-user/${userId}`);
+      setSnackbar({
+        open: true,
+        message: "User sessions have been logged out",
+        severity: "success",
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: "Failed to logout user sessions",
+        severity: "error",
+      });
+    }
+  };
+
   if (loading && users.length === 0) {
     return (
       <Box
@@ -188,7 +222,14 @@ export default function UserManagement() {
       }}
     >
       <Container maxWidth="lg">
-        <Box sx={{ mb: 3 }}>
+        <Box
+          sx={{
+            mb: 3,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <Button
             variant="outlined"
             onClick={() => navigate("/dashboard")}
@@ -204,6 +245,16 @@ export default function UserManagement() {
             }}
           >
             ← Back to Dashboard
+          </Button>
+
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<Logout />}
+            onClick={handleLogoutAllSessions}
+            sx={{ borderRadius: 2 }}
+          >
+            Logout All Sessions
           </Button>
         </Box>
 
@@ -324,6 +375,13 @@ export default function UserManagement() {
                               sx={{ color: "error.main" }}
                             >
                               <Delete />
+                            </IconButton>
+                            <IconButton
+                              onClick={() => handleLogoutUserSessions(user._id)}
+                              sx={{ ml: 1 }}
+                              title="Logout all sessions for this user"
+                            >
+                              <Logout />
                             </IconButton>
                           </TableCell>
                         </TableRow>
