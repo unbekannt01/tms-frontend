@@ -39,7 +39,7 @@ export default function Login() {
   const [resendMessage, setResendMessage] = useState("");
   const [emailServiceDialog, setEmailServiceDialog] = useState(false); // New state for popup
   const [openPopup, setOpenPopup] = useState(false);
-  
+
   // NEW STATES FOR SECURITY SETUP
   const [showSecuritySetup, setShowSecuritySetup] = useState(false);
   const [loginData, setLoginData] = useState(null);
@@ -100,11 +100,16 @@ export default function Login() {
 
       // Navigate based on user role (only if security setup not needed)
       navigateToUserDashboard(data.user);
-
     } catch (err) {
       console.error("Login error:", err);
 
-      if (
+      // Maintenance mode block
+      if (err.response?.data?.code === "MAINTENANCE_MODE") {
+        setError(
+          err.response?.data?.message ||
+            "The system is under maintenance. Please try again later."
+        );
+      } else if (
         err.response?.status === 401 &&
         err.response?.data?.code === "SESSION_LIMIT_EXCEEDED"
       ) {

@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -10,6 +12,8 @@ import {
   Grid,
   Card,
   CardContent,
+  Switch,
+  TextField,
 } from "@mui/material";
 import {
   AdminPanelSettings as AdminIcon,
@@ -26,11 +30,15 @@ import {
   stopSessionMonitoring,
 } from "../utils/SessionManager";
 import { disconnectSocket } from "../services/socket";
+import { maintenanceAPI } from "../api";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [maintLoading, setMaintLoading] = useState(true);
+  const [maintenanceActive, setMaintenanceActive] = useState(false);
+  const [maintenanceMessage, setMaintenanceMessage] = useState("");
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -63,6 +71,19 @@ export default function AdminDashboard() {
 
     setLoading(false);
 
+    // Fetch maintenance status for admin
+    (async () => {
+      try {
+        const { data } = await maintenanceAPI.getStatus();
+        setMaintenanceActive(!!data.active);
+        setMaintenanceMessage(data.message || "");
+      } catch (e) {
+        // silently ignore
+      } finally {
+        setMaintLoading(false);
+      }
+    })();
+
     return () => {
       stopSessionMonitoring();
     };
@@ -80,6 +101,22 @@ export default function AdminDashboard() {
       stopSessionMonitoring();
       localStorage.clear();
       navigate("/");
+    }
+  };
+
+  const updateMaintenance = async (nextActive) => {
+    setMaintLoading(true);
+    try {
+      const { data } = await maintenanceAPI.setStatus(
+        nextActive,
+        maintenanceMessage
+      );
+      setMaintenanceActive(!!data.active);
+      setMaintenanceMessage(data.message || "");
+    } catch (e) {
+      console.error("Failed to update maintenance", e);
+    } finally {
+      setMaintLoading(false);
     }
   };
 
@@ -234,6 +271,95 @@ export default function AdminDashboard() {
                   >
                     {user.roleId?.displayName || "Administrator"}
                   </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+
+          {/* Maintenance Mode */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: 3,
+              backgroundColor: "#ffffff",
+              boxShadow:
+                "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+              border: "1px solid rgba(6, 95, 70, 0.1)",
+              mb: 4,
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+              <SettingsIcon
+                sx={{
+                  fontSize: 40,
+                  color: maintenanceActive ? "#dc2626" : "#059669",
+                }}
+              />
+              <Typography
+                variant="h5"
+                sx={{ fontWeight: 600, color: "#1f2937" }}
+              >
+                Maintenance Mode
+              </Typography>
+              <Chip
+                label={maintenanceActive ? "Active" : "Inactive"}
+                sx={{
+                  ml: "auto",
+                  backgroundColor: maintenanceActive ? "#fef2f2" : "#f0fdf4",
+                  color: maintenanceActive ? "#dc2626" : "#059669",
+                  fontWeight: 600,
+                  border: `1px solid ${
+                    maintenanceActive ? "#fecaca" : "#bbf7d0"
+                  }`,
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ color: "#6b7280", mb: 2 }}>
+              When active, only admins can log in. Users and managers will be
+              blocked from login.
+            </Typography>
+
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={8}>
+                <TextField
+                  label="Maintenance message (optional)"
+                  value={maintenanceMessage}
+                  onChange={(e) => setMaintenanceMessage(e.target.value)}
+                  fullWidth
+                  disabled={maintLoading}
+                />
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    justifyContent: { xs: "flex-start", md: "flex-end" },
+                  }}
+                >
+                  <Typography variant="body2" sx={{ color: "#6b7280" }}>
+                    {maintenanceActive ? "Disable" : "Enable"}
+                  </Typography>
+                  <Switch
+                    checked={maintenanceActive}
+                    onChange={(e) => updateMaintenance(e.target.checked)}
+                    disabled={maintLoading}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={() => updateMaintenance(maintenanceActive)}
+                    disabled={maintLoading}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 600,
+                      backgroundColor: "#059669",
+                      "&:hover": { backgroundColor: "#047857" },
+                    }}
+                  >
+                    Save
+                  </Button>
                 </Box>
               </Grid>
             </Grid>

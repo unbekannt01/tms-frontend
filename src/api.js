@@ -95,7 +95,7 @@ export const avatarAPI = {
   deleteAvatar: () => API.delete("/users/avatar"),
 };
 
-// NEW: Security API helpers
+// Security API helpers
 export const securityAPI = {
   // Complete security setup (used in migration popup)
   completeSecuritySetup: (securityQuestions) =>
@@ -128,6 +128,13 @@ export const securityAPI = {
       code,
       newPassword,
     }),
+};
+
+// Maintenance API helpers
+export const maintenanceAPI = {
+  getStatus: () => API.get("/system/maintenance"),
+  setStatus: (active, message) =>
+    API.post("/admin/system/maintenance", { active, message }),
 };
 
 export default API;
