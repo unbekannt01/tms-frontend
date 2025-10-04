@@ -10,6 +10,24 @@ import {
   getUsers,
 } from "../services/roleService";
 
+const groupPermissions = (permissions) => {
+  const groups = {
+    task: [],
+    user: [],
+    role: [],
+    project: [],
+  };
+
+  permissions.forEach((permission) => {
+    const [resource] = permission.split(":");
+    if (groups[resource]) {
+      groups[resource].push(permission);
+    }
+  });
+
+  return groups;
+};
+
 const RoleManagement = () => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [selectedRolePermissions, setSelectedRolePermissions] = useState([]);
@@ -38,15 +56,46 @@ const RoleManagement = () => {
   });
 
   // Available permissions (you can expand this list)
-  const availablePermissions = [
-    "role:manage",
-    "role:assign",
-    "user:manage",
-    "user:view",
-    "dashboard:view",
-    "reports:view",
-    "settings:manage",
-  ];
+  const availablePermissions = {
+    task: [
+      "task:create:own",
+      "task:create:all",
+      "task:read:own",
+      "task:read:team",
+      "task:read:all",
+      "task:update:own",
+      "task:update:team",
+      "task:update:all",
+      "task:delete:own",
+      "task:delete:team",
+      "task:delete:all",
+      "task:assign",
+    ],
+    user: [
+      "user:create",
+      "user:read:own",
+      "user:read:team",
+      "user:read:all",
+      "user:update:own",
+      "user:update:team",
+      "user:update:all",
+      "user:delete:all",
+    ],
+    role: ["role:assign", "role:manage"],
+    project: [
+      "project:create",
+      "project:read:own",
+      "project:read:team",
+      "project:read:all",
+      "project:update:own",
+      "project:update:team",
+      "project:update:all",
+      "project:delete:own",
+      "project:delete:team",
+      "project:delete:all",
+      "project:manage",
+    ],
+  };
 
   useEffect(() => {
     // Check authentication and permissions
@@ -915,56 +964,417 @@ const RoleManagement = () => {
                     >
                       Permissions
                     </label>
+
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(200px, 1fr))",
-                        gap: "0.75rem",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "1.5rem",
                       }}
                     >
-                      {availablePermissions.map((permission) => (
-                        <label
-                          key={permission}
+                      {/* Task Permissions */}
+                      <div>
+                        <div
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            padding: "0.75rem",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "0.5rem",
-                            cursor: "pointer",
-                            transition: "background-color 0.2s",
+                            marginBottom: "0.75rem",
+                            paddingBottom: "0.5rem",
+                            borderBottom: "2px solid #059669",
                           }}
-                          onMouseEnter={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#f9fafb")
-                          }
-                          onMouseLeave={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
-                          }
                         >
-                          <input
-                            type="checkbox"
-                            checked={formData.permissions.includes(permission)}
-                            onChange={() => handlePermissionChange(permission)}
-                            style={{
-                              marginRight: "0.75rem",
-                              width: "1rem",
-                              height: "1rem",
-                              accentColor: "#059669",
-                            }}
-                          />
                           <span
+                            style={{ fontSize: "1rem", marginRight: "0.5rem" }}
+                          >
+                            📋
+                          </span>
+                          <h4
                             style={{
                               fontSize: "0.875rem",
-                              color: "#374151",
-                              fontWeight: "500",
+                              fontWeight: "600",
+                              color: "#059669",
+                              margin: 0,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
                             }}
                           >
-                            {permission}
+                            Task Permissions
+                          </h4>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(180px, 1fr))",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {availablePermissions.task.map((permission) => (
+                            <label
+                              key={permission}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "0.5rem 0.75rem",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "0.375rem",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                backgroundColor: formData.permissions.includes(
+                                  permission
+                                )
+                                  ? "#f0fdf4"
+                                  : "transparent",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.includes(
+                                  permission
+                                )}
+                                onChange={() =>
+                                  handlePermissionChange(permission)
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  width: "1rem",
+                                  height: "1rem",
+                                  accentColor: "#059669",
+                                  cursor: "pointer",
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#374151",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {permission.split(":").slice(1).join(":")}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* User Permissions */}
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "0.75rem",
+                            paddingBottom: "0.5rem",
+                            borderBottom: "2px solid #3b82f6",
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: "1rem", marginRight: "0.5rem" }}
+                          >
+                            👤
                           </span>
-                        </label>
-                      ))}
+                          <h4
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: "600",
+                              color: "#3b82f6",
+                              margin: 0,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            User Permissions
+                          </h4>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(180px, 1fr))",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {availablePermissions.user.map((permission) => (
+                            <label
+                              key={permission}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "0.5rem 0.75rem",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "0.375rem",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                backgroundColor: formData.permissions.includes(
+                                  permission
+                                )
+                                  ? "#eff6ff"
+                                  : "transparent",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.includes(
+                                  permission
+                                )}
+                                onChange={() =>
+                                  handlePermissionChange(permission)
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  width: "1rem",
+                                  height: "1rem",
+                                  accentColor: "#3b82f6",
+                                  cursor: "pointer",
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#374151",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {permission.split(":").slice(1).join(":")}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Role Permissions */}
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "0.75rem",
+                            paddingBottom: "0.5rem",
+                            borderBottom: "2px solid #8b5cf6",
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: "1rem", marginRight: "0.5rem" }}
+                          >
+                            🔐
+                          </span>
+                          <h4
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: "600",
+                              color: "#8b5cf6",
+                              margin: 0,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            Role Permissions
+                          </h4>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(180px, 1fr))",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {availablePermissions.role.map((permission) => (
+                            <label
+                              key={permission}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "0.5rem 0.75rem",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "0.375rem",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                backgroundColor: formData.permissions.includes(
+                                  permission
+                                )
+                                  ? "#f5f3ff"
+                                  : "transparent",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.includes(
+                                  permission
+                                )}
+                                onChange={() =>
+                                  handlePermissionChange(permission)
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  width: "1rem",
+                                  height: "1rem",
+                                  accentColor: "#8b5cf6",
+                                  cursor: "pointer",
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#374151",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {permission.split(":").slice(1).join(":")}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Project Permissions */}
+                      <div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            marginBottom: "0.75rem",
+                            paddingBottom: "0.5rem",
+                            borderBottom: "2px solid #f59e0b",
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: "1rem", marginRight: "0.5rem" }}
+                          >
+                            📁
+                          </span>
+                          <h4
+                            style={{
+                              fontSize: "0.875rem",
+                              fontWeight: "600",
+                              color: "#f59e0b",
+                              margin: 0,
+                              textTransform: "uppercase",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            Project Permissions
+                          </h4>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fill, minmax(180px, 1fr))",
+                            gap: "0.5rem",
+                          }}
+                        >
+                          {availablePermissions.project.map((permission) => (
+                            <label
+                              key={permission}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "0.5rem 0.75rem",
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "0.375rem",
+                                cursor: "pointer",
+                                transition: "all 0.2s",
+                                backgroundColor: formData.permissions.includes(
+                                  permission
+                                )
+                                  ? "#fffbeb"
+                                  : "transparent",
+                              }}
+                              onMouseEnter={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#f9fafb";
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (
+                                  !formData.permissions.includes(permission)
+                                ) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
+                                }
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.includes(
+                                  permission
+                                )}
+                                onChange={() =>
+                                  handlePermissionChange(permission)
+                                }
+                                style={{
+                                  marginRight: "0.5rem",
+                                  width: "1rem",
+                                  height: "1rem",
+                                  accentColor: "#f59e0b",
+                                  cursor: "pointer",
+                                }}
+                              />
+                              <span
+                                style={{
+                                  fontSize: "0.75rem",
+                                  color: "#374151",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {permission.split(":").slice(1).join(":")}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
