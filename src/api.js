@@ -130,6 +130,81 @@ export const securityAPI = {
     }),
 };
 
+// NEW: Project API helpers
+export const projectAPI = {
+  // Create a new project
+  createProject: (projectData) => API.post("/projects", projectData),
+
+  // Get all projects with filters and pagination
+  getProjects: (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return API.get(`/projects?${searchParams}`);
+  },
+
+  // Get project by ID with tasks
+  getProjectById: (projectId) => API.get(`/projects/${projectId}`),
+
+  // Update project
+  updateProject: (projectId, projectData) =>
+    API.put(`/projects/${projectId}`, projectData),
+
+  // Delete project
+  deleteProject: (projectId) => API.delete(`/projects/${projectId}`),
+
+  // Archive/Unarchive project
+  toggleArchiveProject: (projectId) =>
+    API.patch(`/projects/${projectId}/archive`),
+
+  // Add team member to project
+  addTeamMember: (projectId, userId, role = "developer") =>
+    API.post(`/projects/${projectId}/team`, { userId, role }),
+
+  // Remove team member from project
+  removeTeamMember: (projectId, userId) =>
+    API.delete(`/projects/${projectId}/team/${userId}`),
+
+  // Get project statistics
+  getProjectStats: () => API.get("/projects/stats"),
+
+  // Get projects for dropdown (simple list)
+  getProjectsList: () => API.get("/projects?limit=100&fields=name"),
+};
+
+// UPDATED: Task API helpers (now with project support)
+export const taskAPI = {
+  // Create task with project support
+  createTask: (taskData) => API.post("/tasks", taskData),
+
+  // Get tasks with project filtering
+  getTasks: (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return API.get(`/tasks?${searchParams}`);
+  },
+
+  // Get task by ID
+  getTaskById: (taskId) => API.get(`/tasks/${taskId}`),
+
+  // Update task
+  updateTask: (taskId, taskData) => API.put(`/tasks/${taskId}`, taskData),
+
+  // Delete task
+  deleteTask: (taskId) => API.delete(`/tasks/${taskId}`),
+
+  // Add comment to task
+  addComment: (taskId, comment) =>
+    API.post(`/tasks/${taskId}/comments`, { text: comment }),
+
+  // Get task statistics
+  getTaskStats: (params = {}) => {
+    const searchParams = new URLSearchParams(params);
+    return API.get(`/tasks/stats?${searchParams}`);
+  },
+
+  // Enhance task description with AI
+  enhanceDescription: (title, description) =>
+    API.post("/tasks/enhance-description", { title, description }),
+};
+
 // Maintenance API helpers
 export const maintenanceAPI = {
   getStatus: () => API.get("/system/maintenance"),
