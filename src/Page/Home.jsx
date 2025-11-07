@@ -292,7 +292,7 @@ export default function Home() {
         </Box>
       </Container>
 
-      {/* ✅ AUTO-POPUP: Server's Wide Awake Dialog */}
+      {/* ✅ UPDATED: Server Taking a Nap Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -316,7 +316,7 @@ export default function Home() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          🎉 Server's Wide Awake & Ready to Party! 🚀
+          😴 Server's Taking a Quick Nap! 💤
         </DialogTitle>
         <DialogContent sx={{ mt: 1 }}>
           <Typography
@@ -328,13 +328,16 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            🎊 Great news! Our servers are fully charged and running smoother
-            than a freshly compiled codebase! 💻✨ We're 100% uptime until
-            November 1st - zero downtime, all the good vibes! 🚀
+            💤 Shhh... Our server is catching some Z's! We're using a free hosting tier, 
+            which means the server goes into sleep mode when not in use. 🛌✨
             <br />
             <br />
-            Caught a bug? 404 error? Stack overflow? No worries! Drop us a
-            message below and we'll squash it faster than you can Ctrl+Z! 🐛⚡
+            🚀 <strong>Good news:</strong> Just message us below and we'll wake it up! 
+            It usually takes about 2-3 minutes to stretch and get back to work. ☕️
+            <br />
+            <br />
+            🐛 Found a bug? Have a question? Want to say hi? Drop us a message 
+            and we'll wake up the server AND get back to you faster than you can say "localhost"! ⚡
           </Typography>
           <form
             onSubmit={handleFormSubmit}
@@ -362,7 +365,7 @@ export default function Home() {
             />
             <textarea
               name="message"
-              placeholder="Your Message"
+              placeholder="Your Message (We'll wake up the server for you!)"
               required
               style={{
                 padding: "12px 14px",
@@ -380,7 +383,7 @@ export default function Home() {
             <input
               type="hidden"
               name="_subject"
-              value="Message from TaskFlow - We're All Ears!"
+              value="Wake Up Call! Message from TaskFlow User"
             />
             <Button
               type="submit"
@@ -399,7 +402,7 @@ export default function Home() {
                 },
               }}
             >
-              Send Message 🚀
+              Send Message & Wake Server 🚀
             </Button>
           </form>
           <Typography
@@ -423,7 +426,7 @@ export default function Home() {
               testing.buddy1111@gmail.com
             </a>
             <br />
-            🎯 Questions? Bugs? High-fives? We're here for all of it!
+            ⏰ We'll wake up the server and respond ASAP!
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
