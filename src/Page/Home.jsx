@@ -46,17 +46,7 @@ export default function Home() {
       return; // ✅ Don't show popup if user is authenticated
     }
 
-    // ✨ AUTO-SHOW POPUP: Show server nap dialog once per session for non-authenticated users
-    const hasShownServerDialog = sessionStorage.getItem("hasShownServerDialog");
-    if (!hasShownServerDialog) {
-      // Show popup after a short delay for better UX
-      const timer = setTimeout(() => {
-        setOpenDialog(true);
-        sessionStorage.setItem("hasShownServerDialog", "true");
-      }, 1500); // 1.5 seconds delay
 
-      return () => clearTimeout(timer);
-    }
   }, [navigate]);
 
   if (isAuthenticated) {
@@ -286,13 +276,13 @@ export default function Home() {
                 userSelect: "none",
               }}
             >
-              💤 Server status & contact info
+              📬 Contact Us / Feedback
             </Button>
           </Paper>
         </Box>
       </Container>
 
-      {/* ✅ UPDATED: Server Taking a Nap Dialog */}
+      {/* ✅ Contact / Feedback Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -316,7 +306,7 @@ export default function Home() {
             WebkitTextFillColor: "transparent",
           }}
         >
-          😴 Server's Taking a Quick Nap! 💤
+          📬 Get in Touch!
         </DialogTitle>
         <DialogContent sx={{ mt: 1 }}>
           <Typography
@@ -328,16 +318,11 @@ export default function Home() {
               lineHeight: 1.6,
             }}
           >
-            💤 Shhh... Our server is catching some Z's! We're using a free hosting tier, 
-            which means the server goes into sleep mode when not in use. 🛌✨
+            👋 Hey there! We'd love to hear from you.
             <br />
             <br />
-            🚀 <strong>Good news:</strong> Just message us below and we'll wake it up! 
-            It usually takes about 2-3 minutes to stretch and get back to work. ☕️
-            <br />
-            <br />
-            🐛 Found a bug? Have a question? Want to say hi? Drop us a message 
-            and we'll wake up the server AND get back to you faster than you can say "localhost"! ⚡
+            🐛 Found a bug? Have a suggestion? Want to say hi? 
+            Drop us a message below and we'll get back to you ASAP! ⚡
           </Typography>
           <form
             onSubmit={handleFormSubmit}
@@ -365,7 +350,7 @@ export default function Home() {
             />
             <textarea
               name="message"
-              placeholder="Your Message (We'll wake up the server for you!)"
+              placeholder="Your Message"
               required
               style={{
                 padding: "12px 14px",
@@ -383,7 +368,7 @@ export default function Home() {
             <input
               type="hidden"
               name="_subject"
-              value="Wake Up Call! Message from TaskFlow User"
+              value="New Message from TaskFlow User"
             />
             <Button
               type="submit"
@@ -402,7 +387,7 @@ export default function Home() {
                 },
               }}
             >
-              Send Message & Wake Server 🚀
+              Send Message 🚀
             </Button>
           </form>
           <Typography
@@ -426,7 +411,7 @@ export default function Home() {
               testing.buddy1111@gmail.com
             </a>
             <br />
-            ⏰ We'll wake up the server and respond ASAP!
+            📩 We'll respond as soon as possible!
           </Typography>
         </DialogContent>
         <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
